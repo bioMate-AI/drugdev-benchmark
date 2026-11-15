@@ -1,0 +1,47 @@
+# DrugDev-Bench — model roster for the SELECTED experiments.
+#
+# This is NOT a suite-wide leaderboard roster. Different components were run on different
+# subsets of these systems (dose: Table 1; PK: Table 2; ligand ranking: historical export).
+# Frontier/open LLMs were run as deployed (model + task); BioMate 9B variants and the stock
+# local model use reasoning-disabled serving; the oracle is a reference condition, not a model.
+#
+# Each entry:
+#   name     display name as it appears in the paper's tables
+#   org      provider / origin
+#   role     how it was run
+#   appears  which component tables report it (dose = Table 1, pk = Table 2, ligand = export)
+
+models:
+  # ---- reference condition (not a model) ----
+  - {name: Oracle (hidden curve),            org: DrugDev-Bench, role: reference condition with privileged toxicity curve, appears: [dose]}
+
+  # ---- frontier (proprietary) ----
+  - {name: Claude Opus 5,                    org: Anthropic,     role: direct provider, appears: [dose, pk]}
+  - {name: GPT-6.1-sol,                      org: OpenAI,        role: direct provider, appears: [dose]}
+  - {name: GPT-5.6,                          org: OpenAI,        role: direct provider, appears: [pk]}
+  - {name: GPT-5.6-luna,                     org: OpenAI,        role: direct provider, appears: [pk]}
+  - {name: Gemini 3.1 Pro,                   org: Google DeepMind, role: direct provider, appears: [dose, pk]}
+
+  # ---- open weight ----
+  - {name: Qwen3.8-Max,                      org: Alibaba Qwen,  role: direct provider, appears: [pk]}
+  - {name: Qwen3.8-27B,                      org: Alibaba Qwen,  role: direct provider, appears: [pk]}
+  - {name: Stock Qwen3.5-9B,                 org: Alibaba Qwen,  role: local, reasoning-disabled, appears: [dose]}
+  - {name: GLM-5.2,                          org: Z.ai (Zhipu AI), role: direct provider, appears: [pk]}
+  - {name: DeepSeek V4-pro,                  org: DeepSeek,      role: direct provider, appears: [pk]}
+  - {name: Kimi K3,                          org: Moonshot AI,   role: direct provider, appears: [pk]}
+
+  # ---- BioMate domain models (local, reasoning-disabled) ----
+  - {name: BioMate 9B continued-pretrained,  org: BioMate AI,    role: local, reasoning-disabled, appears: [dose]}
+  - {name: BioMate 9B fine-tuned,            org: BioMate AI,    role: local, reasoning-disabled, appears: [dose]}
+  - {name: BioMate 9B (base),                org: BioMate AI,    role: local, appears: [pk]}
+  - {name: BioMate 9B (SFT),                 org: BioMate AI,    role: local, appears: [pk]}
+
+  # ---- agent scaffold ----
+  - {name: Biomni (A1 scaffold),             org: Stanford (Zou Lab), role: published agent scaffold, appears: [pk]}
+
+# Notes:
+#   * The dose and PK tiers are separate item sets; a system appearing in both was not
+#     necessarily evaluated on both tiers of every component.
+#   * Per-system ligand-ranking values are NOT reported in the manuscript (only the
+#     eight-system mean Spearman 0.696 and a 4-case domain-agent 1.0).
+#   * Serving-condition token budgets (12k vs 20k) require per-run manifests to attribute.
