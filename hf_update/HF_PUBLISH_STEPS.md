@@ -36,11 +36,13 @@ hf upload bioMate-AI/drugdev-bench models.yaml        models.yaml        --repo-
 hf upload bioMate-AI/drugdev-bench paper/drugdev.pdf  paper/drugdev.pdf  --repo-type dataset
 hf upload bioMate-AI/drugdev-bench src/score.py       src/score.py       --repo-type dataset
 
-# c) component READMEs (whole folders in one call each)
-hf upload bioMate-AI/drugdev-bench stage_benchmarks/ stage_benchmarks/ --repo-type dataset
-hf upload bioMate-AI/drugdev-bench N1_free_energy/    N1_free_energy/    --repo-type dataset
-hf upload bioMate-AI/drugdev-bench decision_suite/    decision_suite/    --repo-type dataset
-hf upload bioMate-AI/drugdev-bench execution_track/   execution_track/   --repo-type dataset
+# c) component folders (whole folders in one call each) — stage_benchmarks and
+#    protocol_thresholds now include RUNNABLE data.jsonl + *.source.yaml for the moved clinical tracks
+hf upload bioMate-AI/drugdev-bench stage_benchmarks/    stage_benchmarks/    --repo-type dataset
+hf upload bioMate-AI/drugdev-bench protocol_thresholds/ protocol_thresholds/ --repo-type dataset
+hf upload bioMate-AI/drugdev-bench N1_free_energy/       N1_free_energy/       --repo-type dataset
+hf upload bioMate-AI/drugdev-bench decision_suite/       decision_suite/       --repo-type dataset
+hf upload bioMate-AI/drugdev-bench execution_track/      execution_track/      --repo-type dataset
 ```
 
 ## 3. (When released) upload the per-component data

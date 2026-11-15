@@ -19,6 +19,8 @@ Scoring entry points (six, per Methods):
   chain        stage coverage + LCS ordering + before/after gate adherence
 Plus component helpers used by the paper's tables:
   pbpk         within-twofold on peak concentration (ratio in [0.5, 2.0])
+  boin         exact MTD agreement on the historical same-item dose protocol (moved from RealBio)
+  protocol     exact PASS/WARN/FAIL QC-action match (moved from RealBio; new clinical/QC track)
   fep          relative binding free energy: ΔΔG RMSE / MUE / Kendall / Spearman / f(<1 kcal)
 
 DATA NOTE: data.jsonl files are released from the suite package. This public repo ships the
@@ -33,7 +35,9 @@ ROOT = os.path.dirname(HERE)
 # Map an entry point to the component folder that holds its data.jsonl (when released).
 DATA_DIRS = {
     "dose":        "stage_benchmarks/B4_dose_selection",
+    "boin":        "stage_benchmarks/B4_dose_selection",   # MTD same-item protocol (moved from RealBio)
     "pbpk":        "stage_benchmarks/B3_pk",
+    "protocol":    "protocol_thresholds",                  # QC-gating track (moved from RealBio)
     "fep":         "N1_free_energy",
     "decision":    "decision_suite",
     "categorical": "decision_suite",
@@ -98,6 +102,53 @@ def score_dose(gt, preds):
     return {"entry": "dose", "scored": n, "exact_outcome": round(hit / n, 4) if n else None,
             "note": "exact dose-decision agreement under the reference-curve policy; "
                     "PROVISIONAL per Methods (no-dose credit edge case flagged)."}
+
+# ------------------------------------------------------------------ BOIN / MTD same-item (moved from RealBio)
+def score_boin(gt, preds):
+    """Exact MTD agreement on the historical same-item dose protocol (moved from RealBio).
+
+    This is a SEPARATE protocol from the deterministic reference-curve `dose` scorer above and
+    MUST NOT be pooled with it (drugdev.docx: the historical dose-only leaderboard scores 18
+    scorable items and excludes the two null-MTD references; the structured-response protocol
+    scores all 20). Reference = {true_MTD_level, true_MTD_mg}; a prediction is an MTD level (int),
+    an MTD dose in mg, or a no-MTD declaration.
+    """
+    scorable = hit = null_cases = 0
+    for i, r in gt.items():
+        ref = r.get("reference") or {}
+        lvl = ref.get("true_MTD_level"); mg = ref.get("true_MTD_mg")
+        if lvl in (None, "null") and mg in (None, "null"):
+            null_cases += 1                      # excluded from the 18-item historical denominator
+            continue
+        scorable += 1
+        if i not in preds:
+            continue
+        p = _norm(preds[i])
+        if (lvl is not None and p == _norm(lvl)) or (mg is not None and p == _norm(mg)) \
+           or (lvl is not None and _norm(lvl) in p) or (mg is not None and _norm(mg) in p):
+            hit += 1
+    return {"entry": "boin", "scored_items": scorable, "excluded_null_mtd": null_cases,
+            "exact_mtd_agreement": round(hit / scorable, 4) if scorable else None,
+            "note": "historical same-item dose protocol (18 scorable of 20); NOT pooled with the "
+                    "structured-response `dose` protocol; NOT the full Bayesian Optimal Interval design."}
+
+# ------------------------------------------------------------------ protocol-QC gating (moved from RealBio)
+def score_protocol(gt, preds):
+    """Exact-match QC action (PASS / WARN / FAIL) vs the protocol-aware reference action.
+
+    New track in DrugDev-Bench (moved from RealBio). Each item carries a public data accession
+    (GEO / PRIDE / EMDB) and an expert VALID/DEFECTIVE label; the reference action is the
+    protocol-specific correct decision, where one universal QC cutoff would false-alarm.
+    """
+    n = hit = 0
+    for i, r in gt.items():
+        if i not in preds:
+            continue
+        n += 1
+        if _norm(preds[i]) == _norm(r.get("reference_action")):
+            hit += 1
+    return {"entry": "protocol", "scored": n, "qc_action_accuracy": round(hit / n, 4) if n else None,
+            "note": "exact PASS/WARN/FAIL match vs the protocol-aware reference action; no LLM judge."}
 
 # ------------------------------------------------------------------ generated-tier reference formulas
 def generated_conc_nM(F, D_mg, M_g_per_mol, V_L):
@@ -268,7 +319,8 @@ def score_decision(gt, preds):
                     "run with released decision_suite/data.jsonl."}
 
 ENTRY = {
-    "dose": score_dose, "pbpk": score_pbpk, "fep": score_fep,
+    "dose": score_dose, "boin": score_boin, "pbpk": score_pbpk,
+    "protocol": score_protocol, "fep": score_fep,
     "decision": score_decision, "categorical": score_categorical,
     "set": score_set, "numeric": score_numeric, "chain": score_chain,
 }

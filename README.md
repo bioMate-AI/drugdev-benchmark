@@ -55,20 +55,21 @@ DrugDev-Bench organizes drug-development work into four tracks (Fig. 1 in the pa
 ├── stage_benchmarks/
 │   ├── B1_admet/            # 20 compounds — curated ADMET property/toxicity labels
 │   ├── B2_docking_ligand/   # 15 shared items — ligand-ranking endpoint
-│   ├── B3_pk/               # 15 hand-authored PK cases (peak concentration, µM)
-│   ├── B4_dose_selection/   # 20 hand-authored dose scenarios (policy-based labels)
+│   ├── B3_pk/               # PK: 15 compounds (data.jsonl) — two protocol versions (see below)
+│   ├── B4_dose_selection/   # dose: 20 scenarios (data.jsonl) — two protocol versions (see below)
 │   └── B5_target_structure/ # 10 targets — sequence/structure + pocket residues
+├── protocol_thresholds/     # ⭐ NEW clinical/QC track (moved from RealBio): 100 items, data.jsonl
 ├── N1_free_energy/          # 8 congeneric series, 264 ligands (Merck/Schindler FEP)
 ├── decision_suite/          # 30 decision tasks across 9 archetypes (22/8 train/eval split)
 ├── execution_track/         # cross-stage composer diagnostics (offline)
-├── src/score.py             # deterministic scorer scaffold — six scoring entry points
-├── leaderboard.md / .csv    # SELECTED, PROVISIONAL experiments (dose, PK, ligand ranking)
+├── src/score.py             # deterministic scorer — entry points incl. pbpk / boin / protocol
+├── leaderboard.md / .csv    # clinical-pharmacology leaderboard + SELECTED/PROVISIONAL experiments
 ├── models.yaml              # model roster for the selected experiments
 ├── paper/drugdev.pdf        # the manuscript (source of truth)
 └── DATASHEET.md             # dataset documentation (scope, provenance, limitations)
 ```
 
-Each component carries its own `README.md` stating scope, ground-truth field(s), reference basis, and scoring entry point. **Data files (`data.jsonl`) are released from the suite package;** this public repo ships the documentation, scorer scaffold, and selected results. Where an item set is not yet publicly released, its README says so explicitly.
+Each component carries its own `README.md` stating scope, ground-truth field(s), reference basis, and scoring entry point. The three moved clinical tracks (**PBPK**, **BOIN**, **Protocol-QC**) ship **runnable `data.jsonl`** (15 / 20 / 100 items) plus their source `*.source.yaml`; other components' data ships from the suite package, and each such README says so explicitly.
 
 ---
 
@@ -84,8 +85,15 @@ Each component carries its own `README.md` stating scope, ground-truth field(s),
 | **B4 Dose selection** | 20 hand-authored scenarios | Policy-based dose / no-dose references (deterministic reference-curve rule) | T1 |
 | **B5 Target structure** | 10 targets | Sequence/structure inputs + pocket-residue references | T1 |
 | **N1 Relative binding free energy** | 8 series · 264 ligands | Experimental affinity-derived ΔΔG (Merck/Schindler FEP benchmark) | T1 |
+| **⭐ Protocol-QC** *(new; moved from RealBio)* | 100 items | Public data accessions (GEO/PRIDE/EMDB) + expert VALID/DEFECTIVE labels; exact **PASS/WARN/FAIL** QC action where one universal cutoff false-alarms | T1/T4 |
 
 > **A naming caution carried from the paper:** the PK component (lineage label *B3*) uses **simple numeric endpoints**; it must **not** be described as a validated PBPK simulator just because of that label. Likewise the dose policy below is **not** the full Bayesian Optimal Interval (BOIN) trial design.
+
+> **Two protocol versions per shared clinical track (never pooled).** B3 (PK) and B4 (dose) each carry
+> *two* scored protocols: (a) DrugDev-Bench's own **endpoint-specified** PK and **structured-response**
+> dose (results further below), and (b) the **same-item historical** PBPK/BOIN protocols **moved in from
+> RealBio** with their cross-system leaderboard (next section). They use different denominators (PBPK:
+> endpoint-ambiguous 15; BOIN: 18 scorable of 20) and the manuscripts forbid pooling them.
 
 ### The decision suite — 30 tasks, nine archetypes (Table 5)
 
@@ -138,6 +146,28 @@ Probabilities are rounded to three decimals before the dose rule is applied to p
 ## Selected experiments (provisional — read the caveats)
 
 These are the measurements actually recorded. They are **run-level observations on specific tiers**, not a suite-wide model ranking. See `leaderboard.md` / `leaderboard.csv` and the paper's Methods for the exact protocol and its open issues.
+
+### ⭐ Clinical-pharmacology & QC cross-system leaderboard (moved from RealBio)
+
+**PBPK** (drug-exposure prediction), **BOIN** (trial dose-finding), and **Protocol-QC** (sequencing-QC gating) moved into DrugDev-Bench together with their cross-system results — the **same-item historical comparison** (RealBio paper, Supplementary Table S1), scored by the deterministic scorers now in `src/score.py`.
+
+| System | Protocol-QC (n=100) | PBPK within-2× (n=15) | BOIN exact-dose (n=18) |
+|---|---:|---:|---:|
+| Claude Opus 5 | 0.330 | 0.133 | 0.444 |
+| Gemini 3.1 Pro | **0.630** | 0.000 | 0.278 |
+| GPT-5.6 | 0.460 | **0.200** | **0.500** |
+| GPT-5.6-luna | 0.340 | **0.200** | 0.389 |
+| Qwen3.8-Max | 0.460 | 0.000 | 0.111 |
+| GLM-5.2 | 0.440 | 0.000 | 0.111 |
+| Kimi K3 | 0.360 | 0.000 | 0.167 |
+| DeepSeek V4-pro | 0.420 | 0.067 | 0.167 |
+| Biomni (Stanford A1) | 0.500 | 0.000 | **0.500** |
+| BioMate (engine-free curated retrieval) | n/r | **0.200** | n/r |
+| **8-direct-model mean** | 0.430 *(computed)* | **0.075** | **0.271** |
+
+**The headline finding, now housed here: frontier LLMs used directly fail worst on the clinical-pharmacology *execution* tasks.** PBPK mean within-twofold is **0.075**, and **no system exceeds 0.200** — GPT-5.6, GPT-5.6-luna, and the BioMate retrieval system all **tie at the 0.200 ceiling.** BOIN dose-finding mean is **0.271.** These are exactly the steps where an error mis-doses a trial or misjudges drug exposure.
+
+> **Canonical PBPK = 0.200 ceiling.** An earlier PBPK result of **1.00 was a non-comparable task** (a different disease-state ratio problem) and is **not** used. The same-item PK ceiling is **0.200** (BioMate 3/15; Wilson 0.071–0.452). **Protocol-QC range 0.330–0.630**, Gemini highest; the `0.925` figure from an earlier public draft is **not** in the manuscript and is **not** used. The PBPK/BOIN numbers here are the **endpoint-ambiguous same-item** protocol and are **never pooled** with DrugDev-Bench's endpoint-specified PK (best 0.467) or structured-response dose (both below).
 
 ### Dose selection — structured responses, two tiers of 20 scenarios each (Table 1)
 
@@ -199,11 +229,12 @@ Over **68 workflow topologies**: under a perfect-decomposition assumption, every
 
 ## Key takeaways (faithful to what was measured)
 
-1. **Task construction dominates the result.** Exact dose agreement for Claude Opus 5 moves from **0.25–0.30** (hand-authored) to **0.95–1.00** (generated) — the generated task is *not* uniformly unsolved by LLMs; the contrast reflects sensitivity to specification, not a single causal factor.
-2. **Specified calculations ≠ validated science.** High fidelity under a coarse metric, or RMSE 0 on a scorer's own oracle input, confirms *implementation consistency* — not mechanistic or clinical correctness.
-3. **Evidence types must stay separate.** Experimental ΔΔG, reference formulas, model-derived curves, and provisional class-level values each need their own validation; internal scorer agreement cannot stand in for physiological accuracy.
-4. **Execution is the open frontier.** Confident matching can pick the wrong level of abstraction, and a compatible type label can hide an incompatible representation (a count matrix vs. an `ExpressionSet`). A completed execution study must verify files, terminal state, transformations, and endpoints — neither a correct plan nor a high handoff rate suffices.
-5. **The numbers are provisional by design.** They are preserved as recorded, with their scorer limitations disclosed, so the community can inspect and re-adjudicate rather than inherit a polished-but-unchecked ranking.
+1. **Frontier LLMs fail worst on clinical-pharmacology *execution*.** Used directly, they are near-useless at PBPK (mean **0.075** within-twofold, **nothing above the 0.200 ceiling**) and weak at BOIN dose-finding (mean **0.271**) — the exact steps where an error mis-doses a trial or misjudges exposure. Protocol-QC gating sits higher (0.330–0.630) but still far from reliable.
+2. **Task construction dominates the result.** Exact dose agreement for Claude Opus 5 moves from **0.25–0.30** (hand-authored) to **0.95–1.00** (generated) — the generated task is *not* uniformly unsolved by LLMs; the contrast reflects sensitivity to specification, not a single causal factor.
+3. **Specified calculations ≠ validated science.** High fidelity under a coarse metric, or RMSE 0 on a scorer's own oracle input, confirms *implementation consistency* — not mechanistic or clinical correctness.
+4. **Evidence types must stay separate.** Experimental ΔΔG, reference formulas, model-derived curves, and provisional class-level values each need their own validation; internal scorer agreement cannot stand in for physiological accuracy.
+5. **Execution is the open frontier.** Confident matching can pick the wrong level of abstraction, and a compatible type label can hide an incompatible representation (a count matrix vs. an `ExpressionSet`). A completed execution study must verify files, terminal state, transformations, and endpoints — neither a correct plan nor a high handoff rate suffices.
+6. **The numbers are provisional by design.** They are preserved as recorded, with their scorer limitations disclosed, so the community can inspect and re-adjudicate rather than inherit a polished-but-unchecked ranking.
 
 ---
 
@@ -211,11 +242,14 @@ Over **68 workflow topologies**: under a perfect-decomposition assumption, every
 
 ```bash
 # produce predictions.jsonl per component — {"id": ..., "prediction": <answer>} — then:
-python3 src/score.py dose   my_system/dose.jsonl        # deterministic reference-curve policy
-python3 src/score.py pbpk   my_system/pbpk.jsonl        # within-twofold on peak concentration (µM)
-python3 src/score.py fep    my_system/fep.jsonl         # ΔΔG RMSE / MUE / Kendall / Spearman / f(<1 kcal)
-# scoring entry points: decision · categorical · set · numeric · dose · chain
+python3 src/score.py protocol my_system/protocol.jsonl  # exact PASS/WARN/FAIL QC action (n=100)
+python3 src/score.py pbpk     my_system/pbpk.jsonl      # within-twofold on peak concentration (n=15)
+python3 src/score.py boin     my_system/boin.jsonl      # exact MTD agreement, 18 scorable of 20
+python3 src/score.py dose     my_system/dose.jsonl      # deterministic reference-curve policy
+python3 src/score.py fep      my_system/fep.jsonl       # ΔΔG RMSE / MUE / Kendall / Spearman / f(<1 kcal)
+# scoring entry points: decision · categorical · set · numeric · dose · boin · pbpk · protocol · chain
 ```
+The clinical tracks ship runnable `data.jsonl` — `protocol`, `pbpk`, and `boin` score immediately against the moved items.
 
 The scorer is deterministic and judge-free; any result you produce is directly comparable to the (provisional) numbers above **on the same items under the same policy**.
 

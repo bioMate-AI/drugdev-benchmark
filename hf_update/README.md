@@ -36,7 +36,7 @@ Drug development is a chain of **decisions under constraints** — which target 
 - **License:** CC-BY-4.0 (Merck/Schindler free-energy data retain their own attribution)
 
 ## Four tracks
-- **T1 Molecular-tool workflows** — ADMET (B1, 20), docking/ligand ranking (B2, 15), PK (B3, 15 hand-authored), dose selection (B4, 20 hand-authored), target structure (B5, 10), relative binding free energy (N1, 8 series / 264 ligands).
+- **T1 Molecular-tool workflows** — ADMET (B1, 20), docking/ligand ranking (B2, 15), PK (B3, 15), dose selection (B4, 20), target structure (B5, 10), **Protocol-QC (100, moved from RealBio)**, relative binding free energy (N1, 8 series / 264 ligands).
 - **T2 Targets & perturbations** — design-level in this release.
 - **T3 Search & knowledge** — design-level in this release.
 - **T4 Cross-stage execution** — specified; exercised via offline composer diagnostics (68 topologies).
@@ -45,6 +45,9 @@ Plus a **30-item decision suite** across nine archetypes (22/8 train/eval split)
 
 ## Scoring
 One deterministic scorer, **no LLM judge**, six entry points (decision, categorical, set, numeric, dose, chain). The dose policy and generated-tier exposure formulas are fully specified and implemented in `src/score.py`.
+
+## Clinical-pharmacology cross-system leaderboard (moved from RealBio)
+Frontier LLMs used directly **fail worst on clinical-pharmacology execution.** PBPK within-twofold: mean **0.075**, **no system exceeds 0.200** (GPT-5.6, GPT-5.6-luna, BioMate retrieval tie at the ceiling; the earlier 1.00 was a non-comparable task, dropped). BOIN dose-finding mean **0.271**. Protocol-QC accuracy **0.330–0.630** (Gemini highest). Same-item values from the RealBio paper's Supplementary Table S1; PBPK/BOIN are the endpoint-ambiguous same-item protocols and are never pooled with DrugDev-Bench's endpoint-specified PK (best 0.467) / structured-response dose.
 
 ## Selected results (provisional — see paper)
 **Dose (two tiers of 20):** Oracle with hidden curve 0.85 (17/20); Claude Opus 5 0.25–0.30 hand vs 0.95–1.00 generated — **task construction dominates the result.**

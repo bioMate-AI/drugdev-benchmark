@@ -2,9 +2,48 @@
 
 > These are **run-level observations on specific tiers**, not a suite-wide model ranking.
 > Ranges are across **retained runs, not confidence intervals.** Scores are **provisional**
-> pending the scorer and reference-policy reconciliation in the paper (Methods). All values
-> are transcribed from the manuscript (`paper/drugdev.pdf`, Tables 1–2 and the ligand-ranking
-> export). No value is fabricated; anything not reported in the manuscript is marked `n/r`.
+> pending the scorer and reference-policy reconciliation in the paper (Methods). Values are
+> transcribed from the manuscripts (`paper/drugdev.pdf`, Tables 1–2; and the RealBio paper's
+> same-item Supplementary Table S1 for the moved clinical tracks). No value is fabricated;
+> anything not reported is marked `n/r`, and computed means are labeled as such.
+
+## ⭐ Clinical-pharmacology & QC cross-system leaderboard (moved from RealBio)
+
+These three tasks — **PBPK** (drug-exposure prediction), **BOIN** (trial dose-finding), and
+**Protocol-QC** (sequencing-QC gating) — were moved **into DrugDev-Bench** from RealBio, together
+with their cross-system results. Values are the **same-item historical comparison** (RealBio paper,
+Supplementary Table S1), scored by the deterministic scorers now in `src/score.py` (no LLM judge).
+
+| System | Protocol-QC (n=100) | PBPK within-2× (n=15) | BOIN exact-dose (n=18) |
+|---|---:|---:|---:|
+| Claude Opus 5 | 0.330 | 0.133 | 0.444 |
+| Gemini 3.1 Pro | **0.630** | 0.000 | 0.278 |
+| GPT-5.6 | 0.460 | **0.200** | **0.500** |
+| GPT-5.6-luna | 0.340 | **0.200** | 0.389 |
+| Qwen3.8-Max | 0.460 | 0.000 | 0.111 |
+| GLM-5.2 | 0.440 | 0.000 | 0.111 |
+| Kimi K3 | 0.360 | 0.000 | 0.167 |
+| DeepSeek V4-pro | 0.420 | 0.067 | 0.167 |
+| Biomni (Stanford A1) | 0.500 | 0.000 | **0.500** |
+| BioMate (engine-free curated retrieval) | n/r | **0.200** | n/r |
+| **8-direct-model mean** | 0.430 *(computed)* | **0.075** | **0.271** |
+
+**The finding (now housed here).** Frontier LLMs used directly **fail worst on the clinical-pharmacology
+computations.** On **PBPK**, the mean within-twofold agreement is **0.075**, and **no system exceeds 0.200**
+— GPT-5.6, GPT-5.6-luna and the BioMate retrieval system all **tie at the 0.200 ceiling**. On **BOIN**
+dose-finding the mean is **0.271**. These are *execution* tasks, exactly where errors are most costly.
+
+> **Canonical PBPK = 0.200 ceiling.** An earlier PBPK result of **1.00 was a non-comparable task**
+> (a different disease-state ratio problem) and is **not** used here. The same-item historical PK ceiling
+> is **0.200** (BioMate 3/15; reported Wilson interval 0.071–0.452), tied by two direct models.
+>
+> **Protocol-QC range 0.330–0.630**, Gemini 3.1 Pro highest. A PASS/WARN/FAIL answer is a decision under
+> the benchmark's reference policy, not a complete QC assessment. The `0.925` figure from an earlier public
+> draft is **not** in the manuscript Table 1 and is **not** used.
+>
+> **Two protocol versions per track are never pooled.** PBPK/BOIN here are the *endpoint-ambiguous,
+> same-item historical* protocol; DrugDev-Bench's *endpoint-specified* PK (best 0.467, below) and
+> *structured-response* dose (below) are distinct protocols with different denominators.
 
 ## Dose selection — structured responses (Table 1)
 Two separate tiers, 20 scenarios each. The oracle receives the **hidden toxicity curve** (privileged

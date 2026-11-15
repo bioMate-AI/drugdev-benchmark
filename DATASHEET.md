@@ -19,13 +19,25 @@ The suite is organized into **four tracks** (T1 molecular workflows; T2 targets 
 | **B3 PK** | 15 hand-authored cases | Numeric peak-concentration reference (µM), units specified by protocol | Numeric reference; hand-authored provenance needs separate source/unit verification |
 | **B4 Dose selection** | 20 hand-authored scenarios | Policy-based dose / no-dose labels (deterministic reference-curve rule) | Curated policy label |
 | **B5 Target structure** | 10 targets | Sequence/structure inputs + pocket-residue references | Structural reference |
+| **Protocol-QC** *(new; moved from RealBio)* | 100 items | Public accessions (GEO/PRIDE/EMDB) + expert VALID/DEFECTIVE labels; exact PASS/WARN/FAIL action | Expert-labeled against public data |
 | **N1 Relative binding free energy** | 8 congeneric series · 264 ligands | Experimental affinity-derived ΔΔG | **Experimental** (Merck/Schindler) |
 | **Decision suite** | 30 tasks · 9 archetypes | Mixed: measured inputs, formulas, curated policies, provisional class values | Mixed (kept labeled) |
 | **Generated dose tier** | 20 scenarios | Closed-form `C_nM` + Emax `p(C)`, then dose rule | Derived formula |
 | **Generated PK tier** | 15 cases | Closed-form `C_µM` proxy | Derived formula |
 | **Seeds (S2)** | 2 items each: QSAR, retrosynthesis, target-ID | Instantiated task seeds | Seed-only; **no inferential ranking** |
 
-**Totals.** Dose: 20 hand-authored + 20 generated = 40. PK: 15 hand-authored + 15 generated = 30. **Counts describe available datasets; they do not imply every model was evaluated on every tier.** The decision suite's 22/8 train/eval split applies to its 30 items only; the 264 free-energy ligands are a separate component and are not added to the 30-item denominator.
+**Totals.** Dose: 20 hand-authored + 20 generated = 40. PK: 15 hand-authored + 15 generated = 30. **Protocol-QC: 100 items (new; moved from RealBio).** **Counts describe available datasets; they do not imply every model was evaluated on every tier.** The decision suite's 22/8 train/eval split applies to its 30 items only; the 264 free-energy ligands are a separate component and are not added to the 30-item denominator.
+
+**Clinical-pharmacology tracks moved from RealBio (PBPK, BOIN, Protocol-QC).** Three tasks were moved into
+DrugDev-Bench together with their cross-system results (RealBio paper, same-item Supplementary Table S1), and
+removed from the RealBio public repo in the same transfer. **PBPK and BOIN are not new item sets** — they are
+the **same-item historical (endpoint-ambiguous / dose-only) protocol versions** of the existing B3 PK and B4
+dose tracks, and the manuscripts forbid pooling them with the endpoint-specified / structured-response
+protocols (different denominators: PBPK 15, BOIN 18-scorable-of-20). **Protocol-QC (100 items) is genuinely
+new.** These three ship **runnable `data.jsonl`** plus their source `*.source.yaml`. Canonical cross-system
+figures: **PBPK ceiling 0.200** (8-model mean 0.075; the earlier 1.00 was a non-comparable task and is
+dropped), **BOIN mean 0.271**, **Protocol-QC 0.330–0.630** (Gemini highest; the earlier `0.925` figure is not
+in the manuscript and is not used).
 
 ## Collection & labeling
 

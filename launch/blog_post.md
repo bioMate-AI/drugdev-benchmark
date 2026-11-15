@@ -20,11 +20,9 @@ A fourth commitment runs underneath all of it: **different kinds of ground truth
 
 DrugDev-Bench is organized into four tracks — molecular-tool workflows, targets and perturbations, search and knowledge, and cross-stage execution. The instantiated, documented components in this release are:
 
-- **Five stage benchmarks:** ADMET (20 compounds), docking/ligand ranking (15 items), PK (15 hand-authored cases), dose selection (20 hand-authored scenarios), and target structure (10 targets).
-- **A relative binding free-energy dataset** reusing the Merck/Schindler collection — **8 congeneric series, 264 ligands** with experimental affinity-derived ΔΔG.
-- **A 30-item decision suite** across nine recurring project archetypes (lead-optimization triage, FEP selection, dose escalation, dose projection, tissue exposure, dose schedule, special populations, process knowledge, workflow chains), with a 22/8 train/eval split.
+- **Five stage benchmarks** (ADMET, docking/ligand ranking, PK, dose selection, target structure) plus a **100-item Protocol-QC** track, a **264-ligand** Merck/Schindler free-energy dataset, and a **30-item decision suite** across nine project archetypes (22/8 train/eval split).
 
-Everything is scored by **one deterministic scorer — no LLM judge** — with six entry points (decision, categorical, set, numeric, dose, chain). The two fully-specified policies, the dose-selection rule and the generated-tier exposure formulas, are implemented in the open `score.py`, so any team's predictions re-score identically.
+Everything is scored by **one deterministic scorer — no LLM judge** — now including `pbpk`, `boin`, and `protocol` entry points. The fully-specified policies (the dose-selection rule, the generated-tier exposure formulas) are implemented in the open `score.py`, so any team's predictions re-score identically.
 
 ## The finding that matters most: construction dominates the result
 
@@ -32,13 +30,13 @@ Here's the result we most want people to sit with. On dose selection, we ran two
 
 That is not a story about one model being good or bad. It's a warning: **a benchmark's construction can dominate its conclusions.** The generated tier derives its toxicity curves and labels from the same explicit equations — so an "oracle" with access to those equations matches them by *construction*, not by discovering anything. Report only the generated tier and you'd declare the task solved; report only the hand-authored tier and you'd declare it unsolved. Both would be misleading. We report both, side by side, and refuse to pool them.
 
-The pharmacokinetics track tells a companion story. After we pinned the endpoint to peak concentration in micromolar, the best within-twofold agreement across a dozen systems was **0.467** (Claude Opus 5). That's agreement with a benchmark reference — explicitly *not* clinical accuracy, and the underlying formula models neither absorption nor elimination. Calling it a "validated PBPK simulator" would be wrong, so we don't.
+## Where frontier models fail hardest: the clinical-pharmacology bench
+
+This release folds in three clinical and quality-control tasks — **PBPK** (drug-exposure prediction), **BOIN** (Phase I dose-finding), and **Protocol-QC** (sequencing-QC gating) — with their full cross-system, same-item leaderboard. The pattern is stark and it matters: **frontier LLMs used directly fail worst exactly where an error is most costly.** On PBPK, the mean within-twofold agreement is **0.075**, and **no system clears a 0.200 ceiling** — GPT-5.6, GPT-5.6-luna, and a curated-retrieval system all tie there, and nothing beats it. On BOIN dose-finding the mean is **0.271**. These aren't knowledge questions a model can talk its way through; they're *execution* — predict the exposure, pick the dose — and that's where fluency runs out. Protocol-QC gating lands higher, 0.330 to 0.630 (Gemini 3.1 Pro leads), but still nowhere near dependable. We use the canonical **0.200** PBPK ceiling here and explicitly drop an earlier 1.00 result that came from a different, non-comparable task — the kind of number that looks like a headline and isn't one. (Pin the endpoint — name "peak concentration in micromolar" — and the best score rises to 0.467; we keep that as a *separate* protocol and never pool it with the 0.200 ceiling.)
 
 ## We flag our own limitations in the open
 
-An oracle with the hidden toxicity curve matched **17 of 20** hand-authored dose labels — and the three disagreements turned out to expose places where the *reference labels* and the *implemented policy* disagree, not where a solver erred. We also found a scorer edge case: in a no-dose scenario, an absent dose field could receive credit without an explicit no-dose declaration. Rather than silently rescoring, we **preserved the recorded numbers and marked them provisional.** The offline validation we do report — 6/6, 15/15, 5/5, 14/14, 30/30, 22/22 — checks *implementation contracts*, and we say plainly that it does **not** establish reference-label validity or model generalization.
-
-The execution track makes the open frontier concrete. Across 68 workflow topologies, confident matching cleared the resolver's threshold yet agreed with fine-grained gold tool identities only **4%** of the time — it was picking the wrong *level of abstraction*. A compatible type label can still hide an incompatible scientific representation (a count matrix vs. an `ExpressionSet`). Raising a handoff "fire rate" from 4.4% to 38.2% with a smarter matcher is progress, but it is **not** a success rate for a completed programme.
+An oracle with the hidden toxicity curve matched **17 of 20** hand-authored dose labels — and the three misses exposed places where the *reference labels* and the *implemented policy* disagree, not where a solver erred. We found a scorer edge case too, and rather than silently rescoring, we **preserved the recorded numbers and marked them provisional.** The execution track stays just as honest: across 68 workflow topologies, confident matching agreed with fine-grained gold tool identities only **4%** of the time — picking the wrong *level of abstraction*, not a success rate for a completed programme.
 
 ## Try it, and tell us where we're wrong
 

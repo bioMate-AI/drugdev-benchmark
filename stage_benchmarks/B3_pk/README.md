@@ -13,7 +13,18 @@ license: cc-by-4.0
 > verification; no experimental validation is inferred from the generated formula
 > `C_µM = 1e3 · F · D / (M · V)`, which models neither absorption kinetics, time-to-peak, nor elimination.
 
-**Recorded result (provisional).** Max within-twofold agreement **0.467** (Claude Opus 5) on the 15
-hand-authored compounds; full table in `../../leaderboard.md`.
+## Two protocol versions (never pooled)
 
-**Data.** `data.jsonl` ships with the suite package.
+This PK track carries **two distinct scored protocols on the same 15 compounds**:
+
+1. **Endpoint-specified** (DrugDev-Bench, Table 2) — the prompt names the endpoint (peak concentration, µM).
+   Recorded max within-twofold **0.467** (Claude Opus 5).
+2. **Same-item historical PBPK** (moved from RealBio, Supplementary Table S1) — the **endpoint-ambiguous**
+   prompt. Cross-system **ceiling 0.200** (GPT-5.6, GPT-5.6-luna, and the BioMate retrieval system tie),
+   **8-direct-model mean 0.075**. An earlier **1.00 was a non-comparable task** and is not used.
+
+The 0.075 → 0.467 shift is attributable to **specifying the endpoint**, which is exactly why the two
+protocols are reported separately and **never pooled**. Both tables are in `../../leaderboard.md`.
+
+**Data.** `data.jsonl` (15 compounds, runnable; Cmax/AUC/t½ references) + `cases.source.yaml`.
+Score with `../../src/score.py pbpk`.

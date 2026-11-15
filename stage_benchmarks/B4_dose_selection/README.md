@@ -24,7 +24,18 @@ Let `p_j` be the DLT probability at ordered dose `d_j` and `τ` the target proba
 > **Scorer limitation (flagged).** In a no-dose reference case, an absent dose field can currently receive
 > credit without an explicit valid no-dose declaration. Scores are **provisional** and preserved as recorded.
 
-**Recorded results (provisional).** Oracle (hidden curve) **0.85** (17/20); Claude Opus 5 **0.25–0.30**
-(hand) vs **0.95–1.00** (generated). Full table in `../../leaderboard.md`.
+## Two protocol versions (never pooled)
 
-**Data.** `data.jsonl` ships with the suite package.
+This dose track carries **two distinct scored protocols on the same scenarios**:
+
+1. **Structured-response** (DrugDev-Bench, Table 1) — all **20** scenarios, treating no-safe-dose as an
+   outcome. Oracle (hidden curve) **0.85** (17/20); Claude Opus 5 **0.25–0.30** (hand) vs **0.95–1.00** (generated).
+2. **Same-item historical BOIN / dose-only** (moved from RealBio, Supplementary Table S1) — exact MTD
+   agreement on the **18 scorable** scenarios (the two null-MTD references are excluded). Cross-system
+   **8-direct-model mean 0.271** (GPT-5.6 and Biomni highest at 0.500). Score with `../../src/score.py boin`.
+
+The drugdev manuscript explicitly forbids pooling these — different denominators (20 vs. 18) and different
+reference semantics. Both tables are in `../../leaderboard.md`.
+
+**Data.** `data.jsonl` (20 scenarios, runnable; `reference.true_MTD_level`/`true_MTD_mg`) + `cases.source.yaml`.
+The deterministic reference-curve `dose` scorer and the `boin` MTD scorer are both in `../../src/score.py`.

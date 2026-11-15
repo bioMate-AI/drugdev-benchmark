@@ -13,11 +13,13 @@ Three things we make explicit for every task:
 → the policy that defines a correct decision (written down, deterministic)
 → the evidence that the decision was *executed*, not just described fluently
 
-And one finding we want people to sit with: on dose selection, the *same* model (Claude Opus 5) scored **0.25–0.30 on hand-authored scenarios and 0.95–1.00 on generated ones.** Same metric. The task construction changed — and it swung the conclusion across almost the entire range.
+The headline finding: **frontier LLMs used directly fail worst on clinical-pharmacology execution — exactly where errors are most costly.** On PBPK drug-exposure prediction, the cross-system mean is **0.075** within-twofold and **no model clears a 0.200 ceiling**; on BOIN Phase I dose-finding the mean is **0.271**. Predicting an exposure or picking a trial dose is *execution*, and that's where fluency runs out.
+
+A second finding worth sitting with: on dose selection, the *same* model (Claude Opus 5) scored **0.25–0.30 on hand-authored scenarios and 0.95–1.00 on generated ones.** Same metric. The task construction changed — and it swung the conclusion across almost the entire range.
 
 That's the whole point. A benchmark's construction can dominate its result, so we report both tiers side by side, keep different kinds of ground truth (experimental vs. formula vs. curated policy) labeled and separate, score everything with **one deterministic scorer — no LLM judge**, and flag our own scorer limitations in the open rather than quietly rescoring.
 
-Four tracks. Five stage benchmarks. 264-ligand free-energy set. A 30-task decision suite across nine archetypes. CC-BY-4.0 — datasets, scorer, and paper.
+Four tracks. Five stage benchmarks + a 100-item Protocol-QC track. 264-ligand free-energy set. A 30-task decision suite across nine archetypes. Deterministic `pbpk` / `boin` / `protocol` scorers ship with runnable data. CC-BY-4.0 — datasets, scorer, and paper.
 
 It's built to be *inspected*, not to crown a winner. Run your system, and tell us where we're wrong.
 
@@ -45,13 +47,23 @@ For every task we make 3 things explicit:
 One deterministic scorer. No LLM judge.
 
 **3/**
-The finding to sit with 👇
+The headline finding 👇
 
-Same model (Claude Opus 5), same metric, dose selection:
-• hand-authored scenarios → **0.25–0.30**
-• generated scenarios → **0.95–1.00**
+Frontier LLMs used directly fail worst on clinical-pharmacology *execution*:
+• PBPK drug-exposure: mean **0.075** within-2×, nothing clears a **0.200** ceiling
+• BOIN dose-finding: mean **0.271**
 
-The task construction swung the conclusion across almost the whole range.
+Exactly where a wrong answer mis-doses a trial.
+
+**3b/**
+(Canonical PBPK ceiling = 0.200. An earlier 1.00 came from a different, non-comparable task — we drop it. Pin the endpoint and the best rises to 0.467, kept as a *separate* protocol, never pooled.)
+
+**4a/**
+Second finding to sit with — same model (Claude Opus 5), same metric, dose selection:
+• hand-authored → **0.25–0.30**
+• generated → **0.95–1.00**
+
+Task construction swung the conclusion across almost the whole range.
 
 **4/**
 So we refuse to pick the flattering tier. We report both, side by side, and never pool them.
