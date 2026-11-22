@@ -1,47 +1,666 @@
-# DrugDev-Bench — model roster for the SELECTED experiments.
-#
-# This is NOT a suite-wide leaderboard roster. Different components were run on different
-# subsets of these systems (dose: Table 1; PK: Table 2; ligand ranking: historical export).
-# Frontier/open LLMs were run as deployed (model + task); BioMate 9B variants and the stock
-# local model use reasoning-disabled serving; the oracle is a reference condition, not a model.
-#
-# Each entry:
-#   name     display name as it appears in the paper's tables
-#   org      provider / origin
-#   role     how it was run
-#   appears  which component tables report it (dose = Table 1, pk = Table 2, ligand = export)
-
-models:
-  # ---- reference condition (not a model) ----
-  - {name: Oracle (hidden curve),            org: DrugDev-Bench, role: reference condition with privileged toxicity curve, appears: [dose]}
-
-  # ---- frontier (proprietary) ----
-  - {name: Claude Opus 5,                    org: Anthropic,     role: direct provider, appears: [dose, pk]}
-  - {name: GPT-6.1-sol,                      org: OpenAI,        role: direct provider, appears: [dose]}
-  - {name: GPT-5.6,                          org: OpenAI,        role: direct provider, appears: [pk]}
-  - {name: GPT-5.6-luna,                     org: OpenAI,        role: direct provider, appears: [pk]}
-  - {name: Gemini 3.1 Pro,                   org: Google DeepMind, role: direct provider, appears: [dose, pk]}
-
-  # ---- open weight ----
-  - {name: Qwen3.8-Max,                      org: Alibaba Qwen,  role: direct provider, appears: [pk]}
-  - {name: Qwen3.8-27B,                      org: Alibaba Qwen,  role: direct provider, appears: [pk]}
-  - {name: Stock Qwen3.5-9B,                 org: Alibaba Qwen,  role: local, reasoning-disabled, appears: [dose]}
-  - {name: GLM-5.2,                          org: Z.ai (Zhipu AI), role: direct provider, appears: [pk]}
-  - {name: DeepSeek V4-pro,                  org: DeepSeek,      role: direct provider, appears: [pk]}
-  - {name: Kimi K3,                          org: Moonshot AI,   role: direct provider, appears: [pk]}
-
-  # ---- BioMate domain models (local, reasoning-disabled) ----
-  - {name: BioMate 9B continued-pretrained,  org: BioMate AI,    role: local, reasoning-disabled, appears: [dose]}
-  - {name: BioMate 9B fine-tuned,            org: BioMate AI,    role: local, reasoning-disabled, appears: [dose]}
-  - {name: BioMate 9B (base),                org: BioMate AI,    role: local, appears: [pk]}
-  - {name: BioMate 9B (SFT),                 org: BioMate AI,    role: local, appears: [pk]}
-
-  # ---- agent scaffold ----
-  - {name: Biomni (A1 scaffold),             org: Stanford (Zou Lab), role: published agent scaffold, appears: [pk]}
-
-# Notes:
-#   * The dose and PK tiers are separate item sets; a system appearing in both was not
-#     necessarily evaluated on both tiers of every component.
-#   * Per-system ligand-ranking values are NOT reported in the manuscript (only the
-#     eight-system mean Spearman 0.696 and a 4-case domain-agent 1.0).
-#   * Serving-condition token budgets (12k vs 20k) require per-run manifests to attribute.
+# Historical endpoint labels, not a latest-model roster or regional deployment policy.
+{
+  "revision": "2026-11-22",
+  "prediction_cells": [
+    {
+      "endpoint_label": "Claude Opus 5",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/anthropic_claude-opus-5/cross_domain_routing_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Claude Opus 5",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/anthropic_claude-opus-5/cross_domain_routing_catalog_described.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Claude Opus 5.5",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/anthropic_claude-opus-5.5/cross_domain_routing_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Claude Opus 5.5",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/anthropic_claude-opus-5.5/cross_domain_routing_catalog_described.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "GPT-6.1-sol-pro",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/openai_gpt-6.1-sol-pro/cross_domain_routing_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "GPT-6.1-sol-pro",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/openai_gpt-6.1-sol-pro/cross_domain_routing_catalog_described.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Gemini 3.1 Pro",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/google_gemini-3.1-pro-preview/cross_domain_routing_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Gemini 3.1 Pro",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/google_gemini-3.1-pro-preview/cross_domain_routing_catalog_described.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Kimi K3",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/moonshotai_kimi-k3/cross_domain_routing_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Kimi K3",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/moonshotai_kimi-k3/cross_domain_routing_catalog_described.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "DeepSeek V4-pro",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/deepseek_deepseek-v4-pro/cross_domain_routing_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "DeepSeek V4-pro",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/deepseek_deepseek-v4-pro/cross_domain_routing_catalog_described.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "GLM-5.2",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/z-ai_glm-5.2/cross_domain_routing_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "GLM-5.2",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/z-ai_glm-5.2/cross_domain_routing_catalog_described.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "GLM-5.3-prime",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/z-ai_glm-5.3-prime/cross_domain_routing_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "GLM-5.3-prime",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/z-ai_glm-5.3-prime/cross_domain_routing_catalog_described.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "GPT-5.6-luna",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/openai_gpt-5.6-luna/cross_domain_routing_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "GPT-5.6-luna",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/openai_gpt-5.6-luna/cross_domain_routing_catalog_described.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen2.5-72B",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/qwen_qwen-2.5-72b-instruct/cross_domain_routing_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen2.5-72B",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/qwen_qwen-2.5-72b-instruct/cross_domain_routing_catalog_described.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen3.5-27B",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/qwen_qwen3.5-27b/cross_domain_routing_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen3.5-27B",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/qwen_qwen3.5-27b/cross_domain_routing_catalog_described.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen3.8-27B",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/qwen_qwen3.8-27b/cross_domain_routing_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen3.8-27B",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/qwen_qwen3.8-27b/cross_domain_routing_catalog_described.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen2.5-7B",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/qwen_qwen-2.5-7b-instruct/cross_domain_routing_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen2.5-7B",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/qwen_qwen-2.5-7b-instruct/cross_domain_routing_catalog_described.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen3.5-9B",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/qwen_qwen3.5-9b/cross_domain_routing_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen3.5-9B",
+      "task": "routing",
+      "file": "evaluation/datasets/public_export/results/qwen_qwen3.5-9b/cross_domain_routing_catalog_described.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Claude Opus 5",
+      "task": "param",
+      "file": "evaluation/datasets/public_export/results/anthropic_claude-opus-5/param_prefill_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Claude Opus 5",
+      "task": "param",
+      "file": "evaluation/datasets/public_export/results/anthropic_claude-opus-5/param_prefill.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen3.5-27B",
+      "task": "param",
+      "file": "evaluation/datasets/public_export/results/qwen_qwen3.5-27b/param_prefill_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen3.5-27B",
+      "task": "param",
+      "file": "evaluation/datasets/public_export/results/qwen_qwen3.5-27b/param_prefill.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen3.8-27B",
+      "task": "param",
+      "file": "evaluation/datasets/public_export/results/qwen_qwen3.8-27b/param_prefill_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen3.8-27B",
+      "task": "param",
+      "file": "evaluation/datasets/public_export/results/qwen_qwen3.8-27b/param_prefill.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen3.5-9B",
+      "task": "param",
+      "file": "evaluation/datasets/public_export/results/qwen_qwen3.5-9b/param_prefill_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen3.5-9B",
+      "task": "param",
+      "file": "evaluation/datasets/public_export/results/qwen_qwen3.5-9b/param_prefill.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Claude Opus 5",
+      "task": "method",
+      "file": "evaluation/datasets/bioc_method_selection/results/anthropic_claude-opus-5_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Claude Opus 5",
+      "task": "method",
+      "file": "evaluation/datasets/bioc_method_selection/results/anthropic_claude-opus-5_kb.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "GPT-5.6",
+      "task": "method",
+      "file": "evaluation/datasets/bioc_method_selection/results/openai_gpt-5.6_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "GPT-5.6",
+      "task": "method",
+      "file": "evaluation/datasets/bioc_method_selection/results/openai_gpt-5.6_kb.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Gemini 3.1 Pro",
+      "task": "method",
+      "file": "evaluation/datasets/bioc_method_selection/results/google_gemini-3.1-pro-preview_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Gemini 3.1 Pro",
+      "task": "method",
+      "file": "evaluation/datasets/bioc_method_selection/results/google_gemini-3.1-pro-preview_kb.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Kimi K3",
+      "task": "method",
+      "file": "evaluation/datasets/bioc_method_selection/results/moonshotai_kimi-k3_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Kimi K3",
+      "task": "method",
+      "file": "evaluation/datasets/bioc_method_selection/results/moonshotai_kimi-k3_kb.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen3.8 (2.4T)",
+      "task": "method",
+      "file": "evaluation/datasets/bioc_method_selection/results/qwen_qwen3.8-2.4t-a95b_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "Qwen3.8 (2.4T)",
+      "task": "method",
+      "file": "evaluation/datasets/bioc_method_selection/results/qwen_qwen3.8-2.4t-a95b_kb.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "GLM-5.3",
+      "task": "method",
+      "file": "evaluation/datasets/bioc_method_selection/results/z-ai_glm-5.3_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "GLM-5.3",
+      "task": "method",
+      "file": "evaluation/datasets/bioc_method_selection/results/z-ai_glm-5.3_kb.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "DeepSeek V4-pro",
+      "task": "method",
+      "file": "evaluation/datasets/bioc_method_selection/results/deepseek_deepseek-v4-pro_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "DeepSeek V4-pro",
+      "task": "method",
+      "file": "evaluation/datasets/bioc_method_selection/results/deepseek_deepseek-v4-pro_kb.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "DeepSeek V4.1-flash",
+      "task": "method",
+      "file": "evaluation/datasets/bioc_method_selection/results/deepseek_deepseek-v4.1-flash_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "DeepSeek V4.1-flash",
+      "task": "method",
+      "file": "evaluation/datasets/bioc_method_selection/results/deepseek_deepseek-v4.1-flash_kb.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "anthropic_claude-opus-5.5",
+      "task": "pbpk_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/anthropic_claude-opus-5.5/pbpk_benchmark_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "anthropic_claude-opus-5.5",
+      "task": "pbpk_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/anthropic_claude-opus-5.5/pbpk_benchmark_harness.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "google_gemini-3.8-flash",
+      "task": "pbpk_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/google_gemini-3.8-flash/pbpk_benchmark_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "google_gemini-3.8-flash",
+      "task": "pbpk_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/google_gemini-3.8-flash/pbpk_benchmark_harness.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "openai_gpt-6.1-sol-pro",
+      "task": "pbpk_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/openai_gpt-6.1-sol-pro/pbpk_benchmark_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "openai_gpt-6.1-sol-pro",
+      "task": "pbpk_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/openai_gpt-6.1-sol-pro/pbpk_benchmark_harness.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "z-ai_glm-5.3-prime",
+      "task": "pbpk_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/z-ai_glm-5.3-prime/pbpk_benchmark_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "z-ai_glm-5.3-prime",
+      "task": "pbpk_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/z-ai_glm-5.3-prime/pbpk_benchmark_harness.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "anthropic_claude-opus-5.5",
+      "task": "boin_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/anthropic_claude-opus-5.5/boin_benchmark_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "anthropic_claude-opus-5.5",
+      "task": "boin_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/anthropic_claude-opus-5.5/boin_benchmark_harness.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "deepseek_deepseek-v4-pro",
+      "task": "boin_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/deepseek_deepseek-v4-pro/boin_benchmark_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "deepseek_deepseek-v4-pro",
+      "task": "boin_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/deepseek_deepseek-v4-pro/boin_benchmark_harness.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "google_gemini-3.8-flash",
+      "task": "boin_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/google_gemini-3.8-flash/boin_benchmark_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "google_gemini-3.8-flash",
+      "task": "boin_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/google_gemini-3.8-flash/boin_benchmark_harness.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "openai_gpt-6.1-sol-pro",
+      "task": "boin_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/openai_gpt-6.1-sol-pro/boin_benchmark_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "openai_gpt-6.1-sol-pro",
+      "task": "boin_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/openai_gpt-6.1-sol-pro/boin_benchmark_harness.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "z-ai_glm-5.3-prime",
+      "task": "boin_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/z-ai_glm-5.3-prime/boin_benchmark_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "z-ai_glm-5.3-prime",
+      "task": "boin_benchmark",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/z-ai_glm-5.3-prime/boin_benchmark_harness.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "anthropic_claude-opus-5.5",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/anthropic_claude-opus-5.5/protocol_thresholds_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "deepseek_deepseek-v4-pro",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/deepseek_deepseek-v4-pro/protocol_thresholds_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "google_gemini-3.8-flash",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/google_gemini-3.8-flash/protocol_thresholds_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "openai_gpt-6.1-sol-pro",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/openai_gpt-6.1-sol-pro/protocol_thresholds_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "z-ai_glm-5.3-prime",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/z-ai_glm-5.3-prime/protocol_thresholds_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "anthropic_claude-opus-5.5",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/anthropic_claude-opus-5.5/protocol_thresholds_harness.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "deepseek_deepseek-v4-pro",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/deepseek_deepseek-v4-pro/protocol_thresholds_harness.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "google_gemini-3.8-flash",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/google_gemini-3.8-flash/protocol_thresholds_harness.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "openai_gpt-6.1-sol-pro",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/openai_gpt-6.1-sol-pro/protocol_thresholds_harness.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "z-ai_glm-5.3-prime",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/partC_serving_matched/z-ai_glm-5.3-prime/protocol_thresholds_harness.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "anthropic_claude-opus-5.5",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/improvement_run/runs/anthropic_claude-opus-5.5/protocol_thresholds_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "deepseek_deepseek-v4-pro",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/improvement_run/runs/deepseek_deepseek-v4-pro/protocol_thresholds_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "google_gemini-3.8-flash",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/improvement_run/runs/google_gemini-3.8-flash/protocol_thresholds_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "openai_gpt-6.1-sol-pro",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/improvement_run/runs/openai_gpt-6.1-sol-pro/protocol_thresholds_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "z-ai_glm-5.3-prime",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/improvement_run/runs/z-ai_glm-5.3-prime/protocol_thresholds_bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "anthropic_claude-opus-5.5",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/heldout_validation/anthropic_claude-opus-5.5/bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "deepseek_deepseek-v4-pro",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/heldout_validation/deepseek_deepseek-v4-pro/bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "google_gemini-3.8-flash",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/heldout_validation/google_gemini-3.8-flash/bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "openai_gpt-6.1-sol-pro",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/heldout_validation/openai_gpt-6.1-sol-pro/bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "z-ai_glm-5.3-prime",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/heldout_validation/z-ai_glm-5.3-prime/bare.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "anthropic_claude-opus-5.5",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/improvement_run/runs/anthropic_claude-opus-5.5/protocol_thresholds_card_v1.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "deepseek_deepseek-v4-pro",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/improvement_run/runs/deepseek_deepseek-v4-pro/protocol_thresholds_card_v1.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "google_gemini-3.8-flash",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/improvement_run/runs/google_gemini-3.8-flash/protocol_thresholds_card_v1.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "openai_gpt-6.1-sol-pro",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/improvement_run/runs/openai_gpt-6.1-sol-pro/protocol_thresholds_card_v1.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "z-ai_glm-5.3-prime",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/improvement_run/runs/z-ai_glm-5.3-prime/protocol_thresholds_card_v1.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "anthropic_claude-opus-5.5",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/heldout_validation/anthropic_claude-opus-5.5/card_v1.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "deepseek_deepseek-v4-pro",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/heldout_validation/deepseek_deepseek-v4-pro/card_v1.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "google_gemini-3.8-flash",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/heldout_validation/google_gemini-3.8-flash/card_v1.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "openai_gpt-6.1-sol-pro",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/heldout_validation/openai_gpt-6.1-sol-pro/card_v1.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "z-ai_glm-5.3-prime",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/heldout_validation/z-ai_glm-5.3-prime/card_v1.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "anthropic_claude-opus-5.5",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/improvement_run/runs/anthropic_claude-opus-5.5/protocol_thresholds_card_v2.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "deepseek_deepseek-v4-pro",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/improvement_run/runs/deepseek_deepseek-v4-pro/protocol_thresholds_card_v2.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "google_gemini-3.8-flash",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/improvement_run/runs/google_gemini-3.8-flash/protocol_thresholds_card_v2.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "openai_gpt-6.1-sol-pro",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/improvement_run/runs/openai_gpt-6.1-sol-pro/protocol_thresholds_card_v2.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "z-ai_glm-5.3-prime",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/improvement_run/runs/z-ai_glm-5.3-prime/protocol_thresholds_card_v2.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "anthropic_claude-opus-5.5",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/heldout_validation/anthropic_claude-opus-5.5/card_v2.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "deepseek_deepseek-v4-pro",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/heldout_validation/deepseek_deepseek-v4-pro/card_v2.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "google_gemini-3.8-flash",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/heldout_validation/google_gemini-3.8-flash/card_v2.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "openai_gpt-6.1-sol-pro",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/heldout_validation/openai_gpt-6.1-sol-pro/card_v2.jsonl",
+      "provider_revision": "not independently verified"
+    },
+    {
+      "endpoint_label": "z-ai_glm-5.3-prime",
+      "task": "QC",
+      "file": "evaluation/results/isolation_experiments/heldout_validation/z-ai_glm-5.3-prime/card_v2.jsonl",
+      "provider_revision": "not independently verified"
+    }
+  ]
+}

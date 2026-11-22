@@ -1,283 +1,94 @@
----
-license: cc-by-4.0
-pretty_name: DrugDev-Bench
-task_categories:
-  - other
-tags:
-  - drug-discovery
-  - drug-development
-  - pharmacokinetics
-  - dose-finding
-  - free-energy
-  - admet
-  - benchmark
-  - llm-evaluation
-  - agents
----
+# RealDrug
 
-# DrugDev-Bench — an inspectable benchmark for drug-development *decisions*, from molecular discovery to dose selection
+**Evaluating language-model adherence to drug development procedures**
 
-### The one-sentence version
-Drug development is a chain of **decisions under constraints** — which target to study, which analogue to advance, whether exposure is sufficient, which dose to give next — and DrugDev-Bench asks whether an AI system can make those decisions against **explicit reference policies**, keeping *a plausible-sounding answer* strictly separate from *a correctly executed one*.
+RealDrug compares fixed language-model endpoints with and without a method card on specified exposure-calculation and dose-selection procedures. It separates agreement with a supplied algorithm from independently validated pharmacological prediction. **The current paired study does not execute a scientific workflow, run a full physiological PK simulator or simulate a sequential clinical trial.**
 
-### Why this benchmark is built the way it is
-A model can predict a single property — a binding affinity, a toxicity flag, a concentration — and still be unable to turn those predictions into a defensible project decision. Most drug-discovery benchmarks score one property endpoint in isolation; DrugDev-Bench instead makes three things explicit for every item: **the information the solver is given, the policy that defines the correct decision, and the evidence required to confirm the decision was actually executed** (not just described).
+RealDrug is the current benchmark name. DrugDev-Bench and RealPharma are former names; legacy file identifiers are retained for provenance. Protocol-QC and accession-routing studies belong to the companion RealBio benchmark, not to RealDrug's drug-task denominator.
+**Code and analyses:** [GitHub](https://github.com/bioMate-AI/realdrug-benchmark) · **Dataset:** [Hugging Face](https://huggingface.co/datasets/YaoyunHug/realdrug_benchmark) · **[Datasheet](DATASHEET.md)** · **[Version changes](CHANGELOG.md)**
 
-A second design commitment runs through the whole suite: **different kinds of ground truth are not interchangeable.** Experimental affinity data, closed-form reference formulas, model-derived toxicity curves, curated policy labels, and provisional class-level values are each valid for different claims — and DrugDev-Bench keeps them labeled as such rather than collapsing them into one headline number.
+## Completed paired comparisons
 
-> ### Read this first — what this release *is* and *is not*
-> This is a **benchmark-design release with instantiated task sets, offline validation evidence, and selected model experiments.** It is deliberately *not* a full model-vs-model leaderboard across all four tracks. The dose and pharmacokinetic (PK) numbers below are **provisional, run-level observations** pending the scorer and reference-policy reconciliation described in the paper (`paper/drugdev.pdf`, Methods) — they are **not** confidence intervals, and they do **not** establish clinical accuracy or general model capability. We report exactly what was measured, on exactly which items, and flag what has not yet been run suite-wide. This honesty is the point: the suite is designed to be *inspected*, not to crown a winner.
+| Task | Items | Models | Bare | Method card | Difference [95% interval] |
+|---|---:|---:|---:|---:|---|
+| Exposure calculation: within twofold | 15 | 4 | 0.867 | 1.000 | +0.133 [0.067, 0.217] |
+| Emax-rule dose selection: exact agreement | 20 | 5 | 0.940 | 0.980 | +0.040 [−0.020, 0.100] |
 
-[![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-blue.svg)](https://creativecommons.org/licenses/by/4.0/)
+These serving-matched comparisons use the same retained endpoint labels, items, 8,000-token output budget and retry handling within each task. Intervals are paired item-bootstrap intervals (10,000 resamples; seed 20261118), conditional on the retained snapshots. The dose interval includes no improvement. The exposure change is carried by Claude and GLM; GPT and Gemini already reach the score ceiling without the card. No overall score pools the two endpoints.
 
-**🌐 Project:** [biomate.ai](https://biomate.ai) · **📄 Paper:** [`paper/drugdev.pdf`](paper/drugdev.pdf) · **📊 Datasheet:** [`DATASHEET.md`](DATASHEET.md) · **🔗 Sibling benchmark:** [RealBio](https://github.com/bioMate-AI/realbio-benchmark)
+| Model | Exposure bare | Exposure card | Dose bare | Dose card |
+|---|---:|---:|---:|---:|
+| Claude Opus 5.5 | 0.733 | 1.000 | 1.00 | 1.00 |
+| DeepSeek V4-pro | — | — | 0.95 | 0.95 |
+| Gemini 3.8 Flash | 1.000 | 1.000 | 1.00 | 1.00 |
+| GPT-6.1-sol-pro | 1.000 | 1.000 | 1.00 | 1.00 |
+| GLM-5.3-prime | 0.733 | 1.000 | 0.75 | 0.95 |
 
----
+A dash means the matched cell is unavailable, not a zero score. These endpoint labels identify archived runs; they are not a claim that every provider's latest release was evaluated.
 
-## The four tracks
+![Agreement with generated procedure references](figures/RealDrug-procedures.png)
 
-DrugDev-Bench organizes drug-development work into four tracks (Fig. 1 in the paper). **Track membership is a design classification — it does not assert that every task has a completed model sweep.**
+## What is being calculated
 
-| Track | Scope | What a correct answer requires |
+The exposure reference is `C_uM = 1000 × F × dose_mg / (MW × Vd_L)`. This simplified amount-to-volume proxy does not model absorption, clearance, tissue compartments or an observed clinical peak. The historical `pbpk_benchmark` path is an identifier, not evidence of physiological simulation.
+
+The dose task uses generated Emax toxicity probabilities and a fixed closest-admissible-dose rule: retain doses at or below target + 0.10, select the closest to target, and break ties toward the higher dose. The legacy `boin_benchmark` identifier and BOIN/MTD prompt wording do not turn this into a sequential Bayesian optimal interval trial. **That wording mismatch can disadvantage the bare condition**, while the card provides the operational rule. The exposure card also clarifies the operational endpoint. These contrasts therefore do not isolate pharmacological knowledge alone.
+
+Both reference generators reproduce every stored field of their 15/20-item sets. A procedure oracle scores 1.0 by construction; this establishes internal consistency, not independent biological validity. All 20 evaluated dose references are non-null, so no item is excluded for a null reference. Historical scorer behavior on other null-reference sets remains a limitation.
+
+An input-independent median exposure scores 0.333. The best single constant can cover at most 7/15 references (0.467), proved by exact overlap of the twofold acceptance intervals. This oracle-selected bound is not a trained deployable baseline. The lowest-dose rule scores 5/20 (0.25). Input-based arithmetic baselines remain relevant.
+## Broader resource catalog
+
+The wider drug development program remains important. Its components are retained with their evidence status; their sizes are not added to the paired study's denominator.
+
+| Component | Scope | Evidence status |
 |---|---|---|
-| **T1 — Molecular-tool workflows** | ADMET, docking/ligand assessment, PK, dose selection, target structure, relative binding free energy | A specified calculation or property call, scored against its stated reference and units |
-| **T2 — Targets & perturbations** | Target prioritization, perturbation-response tasks | A decision grounded in target/perturbation evidence (design-level in this release) |
-| **T3 — Search & knowledge** | Evidence retrieval and knowledge-grounded decisions | A conclusion backed by retrieved evidence, not a plausible rationale alone |
-| **T4 — Cross-stage execution** | End-to-end and cross-stage tasks with terminal-state + artifact checks | A real run whose outputs have the right identity, units, representation and provenance for the next stage |
+| ADMET assessment | 20 compounds | Historical unpaired context; assay-source validity needs verification |
+| Structured dose selection | 20 hand-authored and 20 generated items | Distinct unpaired tiers; reference-policy disagreements and scorer limits disclosed |
+| Ligand ranking | 15 three-ligand items | Historical unpaired context; coarse ranks do not establish prospective affinity prediction |
+| Relative binding free energy | 264 ligands in eight series | Scorer-consistency resource; no current paired model-performance claim |
+| Decision suite | 30 tasks | Offline scoring/composer resources, not completed scientific trials |
+| Cross-stage execution track | 68 topologies | Offline resolver/handoff diagnostics, not a workflow success rate |
 
-**Instantiated components in this release:** five **stage benchmarks** (B1–B5), one **relative binding free-energy dataset** (N1: 8 series, 264 ligands), and a **30-item decision suite** across nine archetypes. The execution track (T4) is specified and exercised through **offline composer diagnostics** — not yet a completed roster-wide execution study.
+See [CATALOG.md](CATALOG.md) and the retained component documentation. The shared reproduction snapshot covers the current paired comparisons; it is not a claim that all historical resource data and predictions have been independently validated or packaged. Experimental, generated and provisional labels must remain distinguishable.
 
----
+## Interpretation and limitations
 
-## Repository layout
+The sample sizes are small and template-dependent; the model panel is hand-selected. The study has no length/format-matched method-free control card, no independent observed-pharmacology reference test and no repeated-generation variance estimate. Serving settings match within the retained core, but provider revisions can change over time. Historical unmatched-versus-matched aggregate differences also change the model roster and cannot be assigned solely to serving.
 
-```
-├── stage_benchmarks/
-│   ├── B1_admet/            # 20 compounds — curated ADMET property/toxicity labels
-│   ├── B2_docking_ligand/   # 15 shared items — ligand-ranking endpoint
-│   ├── B3_pk/               # PK: 15 compounds (data.jsonl) — two protocol versions (see below)
-│   ├── B4_dose_selection/   # dose: 20 scenarios (data.jsonl) — two protocol versions (see below)
-│   └── B5_target_structure/ # 10 targets — sequence/structure + pocket residues
-├── protocol_thresholds/     # ⭐ NEW clinical/QC track (moved from RealBio): 100 items, data.jsonl
-├── N1_free_energy/          # 8 congeneric series, 264 ligands (Merck/Schindler FEP)
-├── decision_suite/          # 30 decision tasks across 9 archetypes (22/8 train/eval split)
-├── execution_track/         # cross-stage composer diagnostics (offline)
-├── src/score.py             # deterministic scorer — entry points incl. pbpk / boin / protocol
-├── leaderboard.md / .csv    # clinical-pharmacology leaderboard + SELECTED/PROVISIONAL experiments
-├── models.yaml              # model roster for the selected experiments
-├── paper/drugdev.pdf        # the manuscript (source of truth)
-└── DATASHEET.md             # dataset documentation (scope, provenance, limitations)
-```
+Larger 60-item generated sets exist, but incomplete matched card cells prevent a complete-panel enlarged-set claim. No completed revised-card drug-task transfer result is asserted. Historical scorer null-reference and output-validation limitations remain disclosed. Modeled values are methodological references, not clinical recommendations.
 
-Each component carries its own `README.md` stating scope, ground-truth field(s), reference basis, and scoring entry point. The three moved clinical tracks (**PBPK**, **BOIN**, **Protocol-QC**) ship **runnable `data.jsonl`** (15 / 20 / 100 items) plus their source `*.source.yaml`; other components' data ships from the suite package, and each such README says so explicitly.
+See [RESULTS.md](RESULTS.md) for the per-model paired tables.
 
----
+## Reproduce the reported analyses
 
-## The instantiated components (what actually exists today)
-
-### Stage benchmarks (Table 4 in the paper)
-
-| Component | Scope | Reference / evaluation | Track |
-|---|---|---|---|
-| **B1 ADMET** | 20 compounds | Curated property & toxicity labels (hERG, DILI, Ames-related, rule-of-five descriptors); provenance differs by endpoint | T1 |
-| **B2 Docking & ligand assessment** | 15 shared items | Structural/affinity references; the reported model endpoint is **ligand ranking** | T1 |
-| **B3 PK** | 15 hand-authored cases | Numeric exposure reference; endpoint = **peak concentration (µM)**, specified by protocol | T1 |
-| **B4 Dose selection** | 20 hand-authored scenarios | Policy-based dose / no-dose references (deterministic reference-curve rule) | T1 |
-| **B5 Target structure** | 10 targets | Sequence/structure inputs + pocket-residue references | T1 |
-| **N1 Relative binding free energy** | 8 series · 264 ligands | Experimental affinity-derived ΔΔG (Merck/Schindler FEP benchmark) | T1 |
-| **⭐ Protocol-QC** *(new; moved from RealBio)* | 100 items | Public data accessions (GEO/PRIDE/EMDB) + expert VALID/DEFECTIVE labels; exact **PASS/WARN/FAIL** QC action where one universal cutoff false-alarms | T1/T4 |
-
-> **A naming caution carried from the paper:** the PK component (lineage label *B3*) uses **simple numeric endpoints**; it must **not** be described as a validated PBPK simulator just because of that label. Likewise the dose policy below is **not** the full Bayesian Optimal Interval (BOIN) trial design.
-
-> **Two protocol versions per shared clinical track (never pooled).** B3 (PK) and B4 (dose) each carry
-> *two* scored protocols: (a) DrugDev-Bench's own **endpoint-specified** PK and **structured-response**
-> dose (results further below), and (b) the **same-item historical** PBPK/BOIN protocols **moved in from
-> RealBio** with their cross-system leaderboard (next section). They use different denominators (PBPK:
-> endpoint-ambiguous 15; BOIN: 18 scorable of 20) and the manuscripts forbid pooling them.
-
-### The decision suite — 30 tasks, nine archetypes (Table 5)
-
-Each item presents a project context, inputs, constraints, and a required decision; the reference conclusion is hidden from the prompt. Counts sum to 30. **Reference bases are mixed and are kept labeled.**
-
-| Archetype | Tasks | Decision | Reference basis |
-|---|---:|---|---|
-| **C** Lead-optimization triage | 3 | Advance or deprioritize analogues; identify liability | ADMET reference inputs + project policy |
-| **E** FEP selection | 2 | Rank binders and select candidates | Experimental relative free energy |
-| **H** Dose escalation | 3 | Select MTD and safety flags | Benchmark dose-selection policy |
-| **F1/G** Dose projection | 3 | Starting-dose / human-clearance estimate | MRSD formula + allometric assumptions |
-| **F2** Tissue/organ exposure | 3 | Assess target-site exposure | Unbound-partition / class-level references *(provisional)* |
-| **F3** Dose schedule | 3 | Choose regimen from the PK/PD driver | Curated PK/PD class |
-| **F4** Special populations | 4 | Adjust for organ impairment or interactions | Label-derived / provisional class values *(provisional)* |
-| **P** Process knowledge | 6 | Identify gates and prerequisites | Curated development-process references |
-| **W** Workflow chain | 3 | Order stages and enforce gates | Reference directed acyclic graph |
-
-A **22/8 train/evaluation split** applies to these 30 items, with template-separated sources and a fail-closed overlap guard. (The 264 free-energy ligands are a **separate** component and are **not** added to this 30-item denominator.)
-
-### Seeds and designed extensions (Supplementary S2)
-
-The export also contains **two-item seeds** for QSAR, retrosynthesis, and target identification — enough to instantiate the task family, **not** enough for inferential ranking. Molecular generation, stability/manufacturing, freedom-to-operate, regulatory narrative, and full cross-stage execution are part of the coverage plan **without assigned model results** in this release.
-
----
-
-## Scoring — one deterministic scaffold, six entry points
-
-`src/score.py` exposes **six scoring entry points** matching the output types in the suite: **decision, categorical, set, numeric, dose, chain** (no LLM judge). The two fully-specified policies are implemented here exactly as the paper defines them:
-
-**Dose-selection policy (deterministic reference-curve rule).** Let `p_j` be the dose-limiting-toxicity (DLT) probability at ordered dose `d_j` and `τ` the target probability. The rule declares **no dose** if `p_1 > τ + 0.10`; otherwise it selects the admissible dose minimizing `|p_j − τ|`, where admissibility means `p_j ≤ τ + 0.10`; **ties select the higher-indexed dose**, with a small numerical tolerance at the threshold.
-
-> **This is a benchmark reference policy, not BOIN.** It does not simulate sequential patient allocation, estimate toxicity from accumulating outcomes, or run BOIN's posterior elimination and final selection. The 0.10 band is a benchmark choice.
-
-**Generated exposure/toxicity references.** Generated dose cases use bioavailability `F`, dose `D` (mg), molecular weight `M` (g/mol), distribution volume `V` (L):
-
-```
-C_nM = 1e6 · F · D / (M · V)                    # concentration (nM)
-p(C) = E0 + Emax · C / (EC50 + C)               # Emax exposure–response
-C_µM = 1e3 · F · D / (M · V)                    # generated PK peak-concentration proxy (µM)
-```
-
-Probabilities are rounded to three decimals before the dose rule is applied to produce the label — so **oracle agreement with generated labels is a construction property, not independent validation.** These equations are simplified instantaneous-distribution quantities (no absorption kinetics, clearance, or accumulation) and must not be called steady-state or validated oral-peak predictions.
-
-**Free-energy scorer (N1).** For a ligand and designated reference in the same series, `ΔΔG = ΔG_ligand − ΔG_reference`. The scorer reports RMSE, mean unsigned error, Kendall-τ and Spearman rank measures, and the fraction within 1 kcal·mol⁻¹. A **reference-perfect input scores ≈0.98 on the composite** (not 1.0) because tied experimental values deflate Kendall-τ-a — a disclosed scorer property, not prediction error. The ML variant specifies **leave-target-out** partitioning.
-
-**A known scorer limitation (flagged, not hidden).** In a no-dose reference case, an absent dose field can currently receive credit even without an explicit valid no-dose declaration; probability bounds and contradictory output fields are not comprehensively validated. Recorded scores are **preserved as-is**, not silently recalculated — hence "provisional."
-
----
-
-## Selected experiments (provisional — read the caveats)
-
-These are the measurements actually recorded. They are **run-level observations on specific tiers**, not a suite-wide model ranking. See `leaderboard.md` / `leaderboard.csv` and the paper's Methods for the exact protocol and its open issues.
-
-### ⭐ Clinical-pharmacology & QC cross-system leaderboard (moved from RealBio)
-
-**PBPK** (drug-exposure prediction), **BOIN** (trial dose-finding), and **Protocol-QC** (sequencing-QC gating) moved into DrugDev-Bench together with their cross-system results — the **same-item historical comparison** (RealBio paper, Supplementary Table S1), scored by the deterministic scorers now in `src/score.py`.
-
-| System | Protocol-QC (n=100) | PBPK within-2× (n=15) | BOIN exact-dose (n=18) |
-|---|---:|---:|---:|
-| Claude Opus 5 | 0.330 | 0.133 | 0.444 |
-| Gemini 3.1 Pro | **0.630** | 0.000 | 0.278 |
-| GPT-5.6 | 0.460 | **0.200** | **0.500** |
-| GPT-5.6-luna | 0.340 | **0.200** | 0.389 |
-| Qwen3.8-Max | 0.460 | 0.000 | 0.111 |
-| GLM-5.2 | 0.440 | 0.000 | 0.111 |
-| Kimi K3 | 0.360 | 0.000 | 0.167 |
-| DeepSeek V4-pro | 0.420 | 0.067 | 0.167 |
-| Biomni (Stanford A1) | 0.500 | 0.000 | **0.500** |
-| BioMate (engine-free curated retrieval) | n/r | **0.200** | n/r |
-| **8-direct-model mean** | 0.430 *(computed)* | **0.075** | **0.271** |
-
-**The headline finding, now housed here: frontier LLMs used directly fail worst on the clinical-pharmacology *execution* tasks.** PBPK mean within-twofold is **0.075**, and **no system exceeds 0.200** — GPT-5.6, GPT-5.6-luna, and the BioMate retrieval system all **tie at the 0.200 ceiling.** BOIN dose-finding mean is **0.271.** These are exactly the steps where an error mis-doses a trial or misjudges drug exposure.
-
-> **Canonical PBPK = 0.200 ceiling.** An earlier PBPK result of **1.00 was a non-comparable task** (a different disease-state ratio problem) and is **not** used. The same-item PK ceiling is **0.200** (BioMate 3/15; Wilson 0.071–0.452). **Protocol-QC range 0.330–0.630**, Gemini highest; the `0.925` figure from an earlier public draft is **not** in the manuscript and is **not** used. The PBPK/BOIN numbers here are the **endpoint-ambiguous same-item** protocol and are **never pooled** with DrugDev-Bench's endpoint-specified PK (best 0.467) or structured-response dose (both below).
-
-### Dose selection — structured responses, two tiers of 20 scenarios each (Table 1)
-
-| Model / reference | Hand outcome | Hand fidelity | Hand empties | Generated outcome |
-|---|---|---|---|---|
-| **Oracle** (hidden toxicity curve) | **0.85** | 1.00 | — | 1.00 *by construction* |
-| Claude Opus 5 | 0.25–0.30 | 0.60–0.68 | 0 | 0.95–1.00 |
-| GPT-6.1-sol | 0.10 | ≈0.01 | 1–4 | 1.00 |
-| Stock Qwen3.5-9B | 0.30 | 0.58 | 0 | 0.30 |
-| BioMate 9B continued-pretrained | 0.50 | 0.74 | 0 | 0.05 |
-| BioMate 9B fine-tuned | 0.30 | 0.31 | 0 | 0.10 |
-
-Ranges are across **retained runs, not confidence intervals.** Local models use reasoning-disabled serving. The oracle receives **privileged** curve information and is not a model given the same inputs; its 17/20 agreement **diagnoses disagreements between reference labels and the implemented policy** (two concern no-safe-dose labels not triggered by the elimination threshold; one concerns a closest-to-target vs. higher-dose choice) — it is **not** an upper bound or an end-to-end score. The hand/generated reversal of the continued-pretrained 9B model (0.50 → 0.05) argues **against** a simple capability ordering.
-
-### Pharmacokinetics — within-twofold agreement, 15 hand-authored compounds (Table 2)
-
-Endpoint = benchmark peak concentration (µM); a prediction succeeds when its ratio to the reference lies in **[0.5, 2.0]**. Missing/unparseable predictions count as failures.
-
-| Model | Within twofold |
-|---|---|
-| Claude Opus 5 | **0.467** |
-| Gemini 3.1 Pro | 0.400 |
-| GPT-5.6-luna | 0.333 |
-| GLM-5.2 | 0.267 |
-| GPT-5.6 | 0.200 |
-| DeepSeek V4-pro | 0.067 |
-| BioMate 9B (base) | 0.067 |
-| Qwen3.8-Max | 0.000 |
-| Qwen3.8-27B | 0.000 |
-| Kimi K3 | 0.000 |
-| BioMate 9B (SFT) | 0.000 |
-| Biomni (A1 scaffold) | 0.000 |
-
-This is **agreement with benchmark references**, not clinical prediction accuracy. Generated PK cases and earlier endpoint-ambiguous runs are excluded.
-
-### Ligand ranking (B2) — complementary but coarse
-
-The historical shared export includes **15 ligand-ranking items** and reports **mean Spearman 0.696 across eight direct-model systems.** A domain-agent value of 1.0 covers only **four completed cases** and is **not** a full-set result. With only three ligands per ranking item, possible correlations are coarse; this is evidence about a small ranking task — not docking-pose accuracy or prospective affinity prediction.
-
-### Offline validation (Table 3) — implementation contracts, not science
-
-| Component | Reported check | Interpretation |
-|---|---|---|
-| Relative free-energy scorer | 6/6 | Numeric & ranking score behaviour |
-| Decision scorers | 15/15 | Decision-format & matching behaviour |
-| Chain scorer | 5/5 | Coverage, ordering, gate logic |
-| Decision adapter | 14/14; exemplar 7/7 | Dispatch & prompt-construction checks |
-| Synthesized gold completions | 30/30 at score 1.0 | Internal consistency with the scorer |
-| Training reward checks | 22/22 training items | Gold-vs-trivial-wrong ordering |
-| Free-energy oracle input | RMSE 0; composite ≈0.98 | Tie-sensitive composite behaviour |
-
-These are **self-tests of implementation contracts** — they do **not** establish reference-label validity or model generalization.
-
-### Execution-track composer diagnostics (offline)
-
-Over **68 workflow topologies**: under a perfect-decomposition assumption, every subtask clears the resolver's confidence threshold, yet agreement with **fine-grained gold tool identities is only 4%** (a granularity mismatch — workflow-level units vs. individual Galaxy tools). Separately, **66% of catalogued workflows use free-text parameter descriptions** where structured input-type tokens are expected, blocking them as handoff destinations; replacing exact-string with the specified **semantic matcher raises the handoff fire rate from 4.4% to 38.2%.** These are **resolver/handoff diagnostics, not success rates** for complete programmes.
-
----
-
-## Key takeaways (faithful to what was measured)
-
-1. **Frontier LLMs fail worst on clinical-pharmacology *execution*.** Used directly, they are near-useless at PBPK (mean **0.075** within-twofold, **nothing above the 0.200 ceiling**) and weak at BOIN dose-finding (mean **0.271**) — the exact steps where an error mis-doses a trial or misjudges exposure. Protocol-QC gating sits higher (0.330–0.630) but still far from reliable.
-2. **Task construction dominates the result.** Exact dose agreement for Claude Opus 5 moves from **0.25–0.30** (hand-authored) to **0.95–1.00** (generated) — the generated task is *not* uniformly unsolved by LLMs; the contrast reflects sensitivity to specification, not a single causal factor.
-3. **Specified calculations ≠ validated science.** High fidelity under a coarse metric, or RMSE 0 on a scorer's own oracle input, confirms *implementation consistency* — not mechanistic or clinical correctness.
-4. **Evidence types must stay separate.** Experimental ΔΔG, reference formulas, model-derived curves, and provisional class-level values each need their own validation; internal scorer agreement cannot stand in for physiological accuracy.
-5. **Execution is the open frontier.** Confident matching can pick the wrong level of abstraction, and a compatible type label can hide an incompatible representation (a count matrix vs. an `ExpressionSet`). A completed execution study must verify files, terminal state, transformations, and endpoints — neither a correct plan nor a high handoff rate suffices.
-6. **The numbers are provisional by design.** They are preserved as recorded, with their scorer limitations disclosed, so the community can inspect and re-adjudicate rather than inherit a polished-but-unchecked ranking.
-
----
-
-## Run your own system
+The `reproduction/` directory is a shared, allowlisted snapshot for **both RealBio and RealDrug**. Historical directory names are preserved. It contains 110 primary prediction files and 22 supporting historical files, fixed references, original scoring rules, archived method-card/prompt code, generators and supplementary analyses. The counts describe prediction files, not independent tasks or cases.
 
 ```bash
-# produce predictions.jsonl per component — {"id": ..., "prediction": <answer>} — then:
-python3 src/score.py protocol my_system/protocol.jsonl  # exact PASS/WARN/FAIL QC action (n=100)
-python3 src/score.py pbpk     my_system/pbpk.jsonl      # within-twofold on peak concentration (n=15)
-python3 src/score.py boin     my_system/boin.jsonl      # exact MTD agreement, 18 scorable of 20
-python3 src/score.py dose     my_system/dose.jsonl      # deterministic reference-curve policy
-python3 src/score.py fep      my_system/fep.jsonl       # ΔΔG RMSE / MUE / Kendall / Spearman / f(<1 kcal)
-# scoring entry points: decision · categorical · set · numeric · dose · boin · pbpk · protocol · chain
+cd reproduction
+python3 -I reproduce.py
+python3 -I bootstrap_primary.py > primary-bootstrap.json
+python3 -I supplementary_analysis.py --output supplementary-recomputed.json
+python3 -I verify_generated_references.py --output references-recomputed.json
 ```
-The clinical tracks ship runnable `data.jsonl` — `protocol`, `pbpk`, and `boin` score immediately against the moved items.
 
-The scorer is deterministic and judge-free; any result you produce is directly comparable to the (provisional) numbers above **on the same items under the same policy**.
+These commands make **no model calls** and require only Python's standard library. The first verifies SHA-256 hashes and exact item-ID coverage before scoring. The historical credential-acquisition helper is replaced with an explicit failing stub in the archival harness; scientific prompts and cards are retained. The transformation is documented in `provenance-transformations.json`. Historical provider/database snapshots remain incomplete: offline reproduction of saved scores is not exact replay of original API calls.
 
----
+The top-level `leaderboard.md` / `.csv` now show condition comparisons, not a product ranking. Previous public leaderboards and figures are preserved under `archive/pre-20261122/` for provenance and are **superseded**. Older papers in `paper/` are likewise historical; see `paper/README.md`. The revised preprint's final author metadata is pending; no final preprint release is claimed here.
 
-## Citation
+## Attribution and citation
+
+Yaoyun Zhang and Andrew Dike. RealDrug. Benchmark data/code revision, 22 November 2026. BioMate AI; Andrew Dike is also affiliated with BizBildr. The authors develop BioMate and declare that affiliation. Cite the repository commit used for a result; the revised paper's final citation will be added after author finalization.
 
 ```bibtex
-@misc{drugdevbench2026,
-  title  = {DrugDev-Bench: an inspectable benchmark for drug-development decisions
-            from molecular discovery to dose selection},
+@misc{realdrug2026,
+  title = {RealDrug: Evaluating language-model adherence to drug development procedures},
   author = {Zhang, Yaoyun and Dike, Andrew},
-  year   = {2026},
-  note   = {BioMate AI · BizBildr. Preprint, 7 November 2026},
-  url    = {https://github.com/bioMate-AI/drugdev-benchmark}
+  year = {2026},
+  howpublished = {Benchmark data and code},
+  url = {https://github.com/bioMate-AI/realdrug-benchmark},
+  note = {Data/code revision 2026-11-22; cite the exact commit used}
 }
 ```
 
-## Ground-truth sources (external references)
-- **Relative free energy (N1)** — Schindler et al., *J. Chem. Inf. Model.* 60, 5457–5474 (2020); data: [MCompChem/fep-benchmark](https://github.com/MCompChem/fep-benchmark).
-- **Dose / trials context** — Liu & Yuan, *JRSS-C* 64, 507–523 (2015); Yuan et al., *Clin. Cancer Res.* 22, 4291–4301 (2016). *(BOIN motivates the setting; the implemented rule is a simplified reference-curve policy, not BOIN.)*
-- **Landscape** — Therapeutics Data Commons (Huang et al., NeurIPS D&B 2021); TrialBench (Chen et al., *Sci. Data* 2025); ScienceAgentBench (Chen et al., ICLR 2025).
-
-## Ethics & competing interests
-A **nonclinical methodological benchmark.** Modeled dose/exposure references are **not** dosing recommendations, and internal consistency is **not** clinical validation. The authors also develop **BioMate**, an evaluated system; Y.Z. and A.D. are affiliated with BioMate AI, and A.D. is additionally affiliated with BizBildr. Declared as competing financial interests.
-
-## License
-**CC-BY-4.0** — datasets, scorers, adapters, and documentation. See [`LICENSE`](LICENSE). Experimental free-energy data are attributed to the Merck/Schindler collection; other components retain their own reference and licensing records.
-
----
-Built by **[BioMate AI](https://biomate.ai)** · sibling benchmark: **[RealBio](https://github.com/bioMate-AI/realbio-benchmark)**
+Existing CC BY 4.0 project notices are preserved in [LICENSE](LICENSE) and the reproduction notices. Third-party materials retain their own terms and attribution. See the datasheet for source and validity limitations. [RealBio](https://github.com/bioMate-AI/realbio-benchmark) and [RealDrug](https://github.com/bioMate-AI/realdrug-benchmark) are companion studies, with no shared overall leaderboard score.

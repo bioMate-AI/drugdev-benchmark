@@ -1,47 +1,62 @@
-# DrugDev-Bench: can an AI make a *drug-development decision* — not just predict a number?
+# RealDrug: testing adherence to drug development procedures
 
-*BioMate AI · with BizBildr · preprint 7 November 2026*
+Draft article; not posted to a social account. Updated 22 November 2026.
 
-A model can predict a binding affinity, flag a toxicity, estimate a concentration — and still be unable to answer the question a drug-development team actually asks: *given all of that, what do we do next?* Advance this analogue or kill it? Is exposure high enough? Which dose do the next patients get? Those are **decisions under constraints**, and a correct property prediction is only an input to them, never a substitute.
 
-Today we're releasing **DrugDev-Bench**, an open benchmark built around that gap — and built, deliberately, to be *inspected* rather than to crown a winner.
+**Evaluating language-model adherence to drug development procedures**
 
-## Three things made explicit for every task
+RealDrug compares fixed language-model endpoints with and without a method card on specified exposure-calculation and dose-selection procedures. It separates agreement with a supplied algorithm from independently validated pharmacological prediction. **The current paired study does not execute a scientific workflow, run a full physiological PK simulator or simulate a sequential clinical trial.**
 
-Most drug-discovery benchmarks score one property endpoint in isolation. DrugDev-Bench instead makes three things explicit for every item:
+RealDrug is the current benchmark name. DrugDev-Bench and RealPharma are former names; legacy file identifiers are retained for provenance. Protocol-QC and accession-routing studies belong to the companion RealBio benchmark, not to RealDrug's drug-task denominator.
+**Code and analyses:** [GitHub](https://github.com/bioMate-AI/realdrug-benchmark) · **Dataset:** [Hugging Face](https://huggingface.co/datasets/YaoyunHug/realdrug_benchmark) · **[Datasheet](DATASHEET.md)** · **[Version changes](CHANGELOG.md)**
 
-1. **The information the solver is given** — and, crucially, what is *hidden* from it.
-2. **The policy that defines a correct decision** — written down, deterministic, checkable.
-3. **The evidence required to confirm the decision was executed** — not merely described fluently.
+## Completed paired comparisons
 
-A fourth commitment runs underneath all of it: **different kinds of ground truth are not interchangeable.** Experimental affinity data, closed-form reference formulas, model-derived toxicity curves, curated policy labels, and provisional class-level values each support different claims. DrugDev-Bench keeps them labeled as such instead of blending them into a single headline score.
+| Task | Items | Models | Bare | Method card | Difference [95% interval] |
+|---|---:|---:|---:|---:|---|
+| Exposure calculation: within twofold | 15 | 4 | 0.867 | 1.000 | +0.133 [0.067, 0.217] |
+| Emax-rule dose selection: exact agreement | 20 | 5 | 0.940 | 0.980 | +0.040 [−0.020, 0.100] |
 
-## What's in it
+These serving-matched comparisons use the same retained endpoint labels, items, 8,000-token output budget and retry handling within each task. Intervals are paired item-bootstrap intervals (10,000 resamples; seed 20261118), conditional on the retained snapshots. The dose interval includes no improvement. The exposure change is carried by Claude and GLM; GPT and Gemini already reach the score ceiling without the card. No overall score pools the two endpoints.
 
-DrugDev-Bench is organized into four tracks — molecular-tool workflows, targets and perturbations, search and knowledge, and cross-stage execution. The instantiated, documented components in this release are:
+| Model | Exposure bare | Exposure card | Dose bare | Dose card |
+|---|---:|---:|---:|---:|
+| Claude Opus 5.5 | 0.733 | 1.000 | 1.00 | 1.00 |
+| DeepSeek V4-pro | — | — | 0.95 | 0.95 |
+| Gemini 3.8 Flash | 1.000 | 1.000 | 1.00 | 1.00 |
+| GPT-6.1-sol-pro | 1.000 | 1.000 | 1.00 | 1.00 |
+| GLM-5.3-prime | 0.733 | 1.000 | 0.75 | 0.95 |
 
-- **Five stage benchmarks** (ADMET, docking/ligand ranking, PK, dose selection, target structure) plus a **100-item Protocol-QC** track, a **264-ligand** Merck/Schindler free-energy dataset, and a **30-item decision suite** across nine project archetypes (22/8 train/eval split).
+A dash means the matched cell is unavailable, not a zero score. These endpoint labels identify archived runs; they are not a claim that every provider's latest release was evaluated.
 
-Everything is scored by **one deterministic scorer — no LLM judge** — now including `pbpk`, `boin`, and `protocol` entry points. The fully-specified policies (the dose-selection rule, the generated-tier exposure formulas) are implemented in the open `score.py`, so any team's predictions re-score identically.
+![Agreement with generated procedure references](figures/RealDrug-procedures.png)
 
-## The finding that matters most: construction dominates the result
+## What is being calculated
 
-Here's the result we most want people to sit with. On dose selection, we ran two tiers of 20 scenarios — hand-authored and generated. Claude Opus 5 scored **0.25–0.30 exact agreement on the hand-authored tier** and **0.95–1.00 on the generated tier.** Same model, same metric; the task changed, and the score swung across almost the whole range.
+The exposure reference is `C_uM = 1000 × F × dose_mg / (MW × Vd_L)`. This simplified amount-to-volume proxy does not model absorption, clearance, tissue compartments or an observed clinical peak. The historical `pbpk_benchmark` path is an identifier, not evidence of physiological simulation.
 
-That is not a story about one model being good or bad. It's a warning: **a benchmark's construction can dominate its conclusions.** The generated tier derives its toxicity curves and labels from the same explicit equations — so an "oracle" with access to those equations matches them by *construction*, not by discovering anything. Report only the generated tier and you'd declare the task solved; report only the hand-authored tier and you'd declare it unsolved. Both would be misleading. We report both, side by side, and refuse to pool them.
+The dose task uses generated Emax toxicity probabilities and a fixed closest-admissible-dose rule: retain doses at or below target + 0.10, select the closest to target, and break ties toward the higher dose. The legacy `boin_benchmark` identifier and BOIN/MTD prompt wording do not turn this into a sequential Bayesian optimal interval trial. **That wording mismatch can disadvantage the bare condition**, while the card provides the operational rule. The exposure card also clarifies the operational endpoint. These contrasts therefore do not isolate pharmacological knowledge alone.
 
-## Where frontier models fail hardest: the clinical-pharmacology bench
+Both reference generators reproduce every stored field of their 15/20-item sets. A procedure oracle scores 1.0 by construction; this establishes internal consistency, not independent biological validity. All 20 evaluated dose references are non-null, so no item is excluded for a null reference. Historical scorer behavior on other null-reference sets remains a limitation.
 
-This release folds in three clinical and quality-control tasks — **PBPK** (drug-exposure prediction), **BOIN** (Phase I dose-finding), and **Protocol-QC** (sequencing-QC gating) — with their full cross-system, same-item leaderboard. The pattern is stark and it matters: **frontier LLMs used directly fail worst exactly where an error is most costly.** On PBPK, the mean within-twofold agreement is **0.075**, and **no system clears a 0.200 ceiling** — GPT-5.6, GPT-5.6-luna, and a curated-retrieval system all tie there, and nothing beats it. On BOIN dose-finding the mean is **0.271**. These aren't knowledge questions a model can talk its way through; they're *execution* — predict the exposure, pick the dose — and that's where fluency runs out. Protocol-QC gating lands higher, 0.330 to 0.630 (Gemini 3.1 Pro leads), but still nowhere near dependable. We use the canonical **0.200** PBPK ceiling here and explicitly drop an earlier 1.00 result that came from a different, non-comparable task — the kind of number that looks like a headline and isn't one. (Pin the endpoint — name "peak concentration in micromolar" — and the best score rises to 0.467; we keep that as a *separate* protocol and never pool it with the 0.200 ceiling.)
+An input-independent median exposure scores 0.333. The best single constant can cover at most 7/15 references (0.467), proved by exact overlap of the twofold acceptance intervals. This oracle-selected bound is not a trained deployable baseline. The lowest-dose rule scores 5/20 (0.25). Input-based arithmetic baselines remain relevant.
+## Broader resource catalog
 
-## We flag our own limitations in the open
+The wider drug development program remains important. Its components are retained with their evidence status; their sizes are not added to the paired study's denominator.
 
-An oracle with the hidden toxicity curve matched **17 of 20** hand-authored dose labels — and the three misses exposed places where the *reference labels* and the *implemented policy* disagree, not where a solver erred. We found a scorer edge case too, and rather than silently rescoring, we **preserved the recorded numbers and marked them provisional.** The execution track stays just as honest: across 68 workflow topologies, confident matching agreed with fine-grained gold tool identities only **4%** of the time — picking the wrong *level of abstraction*, not a success rate for a completed programme.
+| Component | Scope | Evidence status |
+|---|---|---|
+| ADMET assessment | 20 compounds | Historical unpaired context; assay-source validity needs verification |
+| Structured dose selection | 20 hand-authored and 20 generated items | Distinct unpaired tiers; reference-policy disagreements and scorer limits disclosed |
+| Ligand ranking | 15 three-ligand items | Historical unpaired context; coarse ranks do not establish prospective affinity prediction |
+| Relative binding free energy | 264 ligands in eight series | Scorer-consistency resource; no current paired model-performance claim |
+| Decision suite | 30 tasks | Offline scoring/composer resources, not completed scientific trials |
+| Cross-stage execution track | 68 topologies | Offline resolver/handoff diagnostics, not a workflow success rate |
 
-## Try it, and tell us where we're wrong
+See [CATALOG.md](CATALOG.md) and the retained component documentation. The shared reproduction snapshot covers the current paired comparisons; it is not a claim that all historical resource data and predictions have been independently validated or packaged. Experimental, generated and provisional labels must remain distinguishable.
 
-DrugDev-Bench is **CC-BY-4.0**: datasets, scorers, adapters, documentation, and the paper. Run your own system against the fixed items and the open scorer, and your number is directly comparable — on the same items, under the same written policy. And because every reference policy and known limitation is in the open, the most useful contribution you can make is to find the one we missed.
+## Interpretation and limitations
 
-**Code & paper:** github.com/bioMate-AI/drugdev-benchmark · **Sibling benchmark:** RealBio.
+The sample sizes are small and template-dependent; the model panel is hand-selected. The study has no length/format-matched method-free control card, no independent observed-pharmacology reference test and no repeated-generation variance estimate. Serving settings match within the retained core, but provider revisions can change over time. Historical unmatched-versus-matched aggregate differences also change the model roster and cannot be assigned solely to serving.
 
-*Nonclinical methodological benchmark. Modeled dose/exposure references are not dosing recommendations. The authors also develop BioMate, an evaluated system — declared competing interest.*
+Larger 60-item generated sets exist, but incomplete matched card cells prevent a complete-panel enlarged-set claim. No completed revised-card drug-task transfer result is asserted. Historical scorer null-reference and output-validation limitations remain disclosed. Modeled values are methodological references, not clinical recommendations.
