@@ -1,0 +1,38 @@
+{
+  "revision": "2026-11-22",
+  "kind": "condition comparisons, not product ranking",
+  "columns": [
+    "endpoint",
+    "items",
+    "models",
+    "bare_or_original",
+    "guided_or_revised",
+    "difference",
+    "ci95_low",
+    "ci95_high"
+  ],
+  "rows": [
+    [
+      "generated_exposure_within_twofold",
+      15,
+      4,
+      0.8666666666666667,
+      1,
+      0.1333333333333333,
+      0.067,
+      0.217
+    ],
+    [
+      "generated_Emax_dose_exact_agreement",
+      20,
+      5,
+      0.94,
+      0.98,
+      0.04,
+      -0.02,
+      0.1
+    ]
+  ],
+  "precision": "Displayed point estimates and intervals; reproduce full precision from saved predictions.",
+  "new_model_calls": 0
+}
